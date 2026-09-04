@@ -1,22 +1,25 @@
 {
   "expo": {
     "name": "563-JP",
-    "slug": "563-JP",
+    "slug": "563-joao-paulo-",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "563jp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "borderlesspc12",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.borderless.jp563"
     },
     "android": {
+      "package": "com.borderless.jp563",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -34,6 +37,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8b188305-c59e-4868-942e-9c2104761cf4"
+      }
     }
   }
 }
