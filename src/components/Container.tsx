@@ -1,37 +1,58 @@
 import { PropsWithChildren } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    View,
-    ViewProps,
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+  ViewProps,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, spacing } from "@/src/components/theme";
 
 type ContainerProps = PropsWithChildren<ViewProps> & {
   scroll?: boolean;
   keyboardAware?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  padded?: boolean;
 };
 
 export function Container({
   children,
   scroll = false,
   keyboardAware = false,
+  refreshing = false,
+  onRefresh,
+  padded = true,
   style,
   ...props
 }: ContainerProps) {
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        !padded && styles.noPadding,
+      ]}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            colors={[colors.primary]}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            tintColor={colors.primary}
+          />
+        ) : undefined
+      }
+      showsVerticalScrollIndicator={false}
     >
       {children}
     </ScrollView>
   ) : (
-    <View style={styles.content}>{children}</View>
+    <View style={[styles.content, !padded && styles.noPadding]}>{children}</View>
   );
 
   const keyboardContent = keyboardAware ? (
@@ -46,7 +67,7 @@ export function Container({
   );
 
   return (
-    <SafeAreaView {...props} style={[styles.safeArea, style]}>
+    <SafeAreaView {...props} edges={["top", "left", "right"]} style={[styles.safeArea, style]}>
       {keyboardContent}
     </SafeAreaView>
   );
@@ -67,5 +88,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  noPadding: {
+    padding: 0,
   },
 });

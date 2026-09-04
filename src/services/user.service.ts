@@ -1,13 +1,17 @@
-import { doc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { firebaseApp } from "@/src/services/firebase";
 
-export type ClientProfile = {
+export type UserRole = "client" | "admin";
+
+export type UserProfile = {
   uid: string;
   name: string;
   email: string;
-  role: "client";
-  createdAt: ReturnType<typeof serverTimestamp>;
+  role: UserRole;
+  phone?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 };
 
 const database = getFirestore(firebaseApp);
@@ -23,5 +27,12 @@ export async function createClientProfile(
     email,
     role: "client",
     createdAt: serverTimestamp(),
-  } satisfies ClientProfile);
+    updatedAt: serverTimestamp(),
+  } satisfies UserProfile);
+}
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const snapshot = await getDoc(doc(database, "users", uid));
+  if (!snapshot.exists()) return null;
+  return snapshot.data() as UserProfile;
 }

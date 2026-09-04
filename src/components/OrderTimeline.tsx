@@ -1,0 +1,107 @@
+import { StyleSheet, View } from "react-native";
+
+import { colors, radius, spacing } from "@/src/components/theme";
+import { Typography } from "@/src/components/Typography";
+import { CLIENT_TIMELINE_STEPS } from "@/src/utils/orderLabels";
+import { OrderStatus } from "@/src/types/order";
+
+type OrderTimelineProps = {
+  orderStatus: OrderStatus;
+};
+
+export function OrderTimeline({ orderStatus }: OrderTimelineProps) {
+  return (
+    <View style={styles.list}>
+      {CLIENT_TIMELINE_STEPS.map((step, index) => {
+        const done = (step.match as readonly string[]).includes(orderStatus);
+        const isCurrent =
+          done &&
+          (index === CLIENT_TIMELINE_STEPS.length - 1 ||
+            !(CLIENT_TIMELINE_STEPS[index + 1].match as readonly string[]).includes(
+              orderStatus,
+            ));
+
+        return (
+          <View key={step.key} style={styles.row}>
+            <View style={styles.rail}>
+              <View
+                style={[
+                  styles.dot,
+                  done && styles.dotDone,
+                  isCurrent && styles.dotCurrent,
+                ]}
+              />
+              {index < CLIENT_TIMELINE_STEPS.length - 1 ? (
+                <View style={[styles.line, done && styles.lineDone]} />
+              ) : null}
+            </View>
+            <View style={styles.copy}>
+              <Typography
+                style={[styles.label, done && styles.labelDone]}
+                variant="body"
+              >
+                {step.label}
+              </Typography>
+              {isCurrent ? (
+                <Typography variant="caption">Status atual</Typography>
+              ) : null}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  list: {
+    gap: 0,
+  },
+  row: {
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 56,
+  },
+  rail: {
+    alignItems: "center",
+    width: 20,
+  },
+  dot: {
+    backgroundColor: colors.border,
+    borderRadius: radius.xl,
+    height: 14,
+    marginTop: 4,
+    width: 14,
+  },
+  dotDone: {
+    backgroundColor: colors.primary,
+  },
+  dotCurrent: {
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderWidth: 3,
+    height: 16,
+    width: 16,
+  },
+  line: {
+    backgroundColor: colors.border,
+    flex: 1,
+    marginVertical: 4,
+    width: 2,
+  },
+  lineDone: {
+    backgroundColor: colors.primary,
+  },
+  copy: {
+    flex: 1,
+    gap: 2,
+    paddingBottom: spacing.md,
+  },
+  label: {
+    color: colors.muted,
+  },
+  labelDone: {
+    color: colors.ink,
+    fontWeight: "700",
+  },
+});

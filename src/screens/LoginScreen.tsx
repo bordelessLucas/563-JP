@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { Input } from "@/src/components/Input";
-import { colors, spacing } from "@/src/components/theme";
+import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useAuthActions } from "@/src/hooks/useAuthActions";
@@ -17,11 +17,17 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const { error, loading, login } = useAuthActions();
   const { login: authenticate } = useAuth();
+
+  const canSubmit = useMemo(
+    () => email.trim().length > 3 && password.length >= 6 && !loading,
+    [email, loading, password],
+  );
+
   const handleLogin = async () => {
-    const signedIn = await login(email, password, () =>
-      authenticate(email, password),
+    if (!canSubmit) return;
+    await login(email.trim(), password, () =>
+      authenticate(email.trim(), password),
     );
-    if (signedIn) router.replace("/home");
   };
 
   return (
@@ -31,7 +37,7 @@ export function LoginScreen() {
           <Ionicons color={colors.white} name="flower-outline" size={28} />
         </View>
         <Typography style={styles.eyebrow} variant="caption">
-          FLORA &amp; PRESENTES
+          FLORA & PRESENTES
         </Typography>
         <Typography variant="display">
           Flores que dizem o que você sente.
@@ -48,6 +54,8 @@ export function LoginScreen() {
             label="E-mail"
             onChangeText={setEmail}
             placeholder="voce@email.com"
+            returnKeyType="next"
+            textContentType="emailAddress"
             value={email}
           />
           <Input
@@ -56,25 +64,44 @@ export function LoginScreen() {
             isPassword
             label="Senha"
             onChangeText={setPassword}
+            onSubmitEditing={() => {
+              void handleLogin();
+            }}
             placeholder="Sua senha"
+            returnKeyType="go"
+            textContentType="password"
             value={password}
           />
-          <Pressable onPress={() => router.push("/forgot-password")}>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push("/forgot-password")}
+          >
             <Typography style={styles.forgot} variant="caption">
               Esqueci minha senha
             </Typography>
           </Pressable>
-          {error && (
+          {error ? (
             <Typography style={styles.error} variant="caption">
               {error}
             </Typography>
-          )}
-          <Button label="Entrar" loading={loading} onPress={handleLogin} />
+          ) : null}
+          <Button
+            disabled={!canSubmit}
+            label="Entrar"
+            loading={loading}
+            onPress={() => {
+              void handleLogin();
+            }}
+          />
         </View>
 
         <View style={styles.registerRow}>
           <Typography variant="caption">Ainda não tem uma conta?</Typography>
-          <Pressable onPress={() => router.push("/register")}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/register")}
+          >
             <Typography style={styles.link} variant="caption">
               Criar conta
             </Typography>
@@ -95,7 +122,7 @@ const styles = StyleSheet.create({
   brandMark: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     height: 56,
     justifyContent: "center",
     marginBottom: spacing.sm,
@@ -123,6 +150,7 @@ const styles = StyleSheet.create({
   registerRow: {
     alignItems: "center",
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
     justifyContent: "center",
     marginTop: spacing.xl,

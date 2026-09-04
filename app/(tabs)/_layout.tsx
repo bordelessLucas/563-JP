@@ -1,59 +1,143 @@
-import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { colors } from "@/src/components/theme";
+import { Typography } from "@/src/components/Typography";
+import { useCart } from "@/src/contexts/CartContext";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
+function CartTabIcon({
+  color,
+  focused,
+  size,
+}: {
   color: string;
+  focused: boolean;
+  size: number;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  const { itemCount } = useCart();
+
+  return (
+    <View>
+      <Ionicons
+        color={color}
+        name={focused ? "cart" : "cart-outline"}
+        size={size}
+      />
+      {itemCount > 0 ? (
+        <View style={styles.badge}>
+          <Typography style={styles.badgeLabel} variant="caption">
+            {itemCount > 9 ? "9+" : String(itemCount)}
+          </Typography>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarHideOnKeyboard: true,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 62,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          title: "Home",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              color={color}
+              name={focused ? "home" : "home-outline"}
+              size={size}
+            />
           ),
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="catalog"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: "Catálogo",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              color={color}
+              name={focused ? "grid" : "grid-outline"}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: "Carrinho",
+          tabBarIcon: ({ color, focused, size }) => (
+            <CartTabIcon color={color} focused={focused} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: "Pedidos",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              color={color}
+              name={focused ? "receipt" : "receipt-outline"}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              color={color}
+              name={focused ? "person" : "person-outline"}
+              size={size}
+            />
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: 9,
+    height: 18,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 4,
+    position: "absolute",
+    right: -10,
+    top: -4,
+  },
+  badgeLabel: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "700",
+    lineHeight: 12,
+  },
+});

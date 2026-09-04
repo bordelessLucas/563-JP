@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 
-import { colors, fontFamily, spacing } from "@/src/components/theme";
+import { colors, fontFamily, radius, spacing } from "@/src/components/theme";
 
 type ButtonVariant = "primary" | "secondary" | "outline";
 
@@ -35,6 +35,7 @@ export function Button({
         isOutline && styles.outline,
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
+        pressed && !isDisabled && !isOutline && !isSecondary && styles.primaryPressed,
       ]}
     >
       {loading ? (
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 14,
+    borderRadius: radius.md,
     justifyContent: "center",
     minHeight: 54,
     paddingHorizontal: spacing.lg,
@@ -76,6 +77,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     transform: [{ scale: 0.98 }],
+  },
+  primaryPressed: {
+    backgroundColor: colors.primaryPressed,
   },
   label: {
     color: colors.white,

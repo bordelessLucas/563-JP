@@ -28,24 +28,46 @@ service cloud.firestore {
 
     match /categories/{categoryId} {
       allow read: if resource.data.active == true || isAdmin();
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     match /products/{productId} {
       allow read: if resource.data.active == true || isAdmin();
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /banners/{bannerId} {
+      allow read: if resource.data.active == true || isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     match /carts/{userId} {
       allow read, create, update, delete: if isOwner(userId) || isAdmin();
     }
 
+    match /addresses/{addressId} {
+      allow read, update, delete: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /orders/{orderId} {
-      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid;
-      allow read: if isAdmin() || (signedIn() && resource.data.customerId == request.auth.uid);
-      allow update: if isAdmin() || (signedIn()
-        && resource.data.customerId == request.auth.uid
-        && request.resource.data.customerId == resource.data.customerId);
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'orderNumber', 'customerId', 'items', 'recipient',
+          'deliveryAddress', 'deliveryDate', 'subtotal', 'total',
+          'paymentMethod', 'paymentStatus', 'orderStatus', 'deliveryStatus'
+        ]);
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

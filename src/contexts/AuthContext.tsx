@@ -1,26 +1,35 @@
 import { User } from "firebase/auth";
 import {
-    PropsWithChildren,
-    createContext,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import {
-    logout,
-    observeAuthState,
-    registerWithEmail,
-    requestPasswordReset,
-    signInWithEmail,
+  logout,
+  observeAuthState,
+  registerWithEmail,
+  requestPasswordReset,
+  signInWithEmail,
 } from "@/src/services/auth.service";
-import { createClientProfile } from "@/src/services/user.service";
+import {
+  createClientProfile,
+  getUserProfile,
+  UserProfile,
+  UserRole,
+} from "@/src/services/user.service";
 
 type AuthContextValue = {
   user: User | null;
+  profile: UserProfile | null;
+  role: UserRole | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  homeRoute: "/(tabs)" | "/admin";
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -31,33 +40,61 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(
     () =>
       observeAuthState((nextUser) => {
         setUser(nextUser);
-        setLoading(false);
+        if (!nextUser) {
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+        void getUserProfile(nextUser.uid)
+          .then((nextProfile) => {
+            setProfile(nextProfile);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
       }),
     [],
   );
 
+  const role = profile?.role ?? null;
+  const isAdmin = role === "admin";
+  const homeRoute = isAdmin ? "/admin" : "/(tabs)";
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      profile,
+      role,
       loading,
       isAuthenticated: user !== null,
+      isAdmin,
+      homeRoute,
       login: async (email, password) => {
-        await signInWithEmail(email, password);
+        const credential = await signInWithEmail(email, password);
+        const nextProfile = await getUserProfile(credential.user.uid);
+        setUser(credential.user);
+        setProfile(nextProfile);
       },
       register: async (name, email, password) => {
         const credential = await registerWithEmail(name, email, password);
         await createClientProfile(credential.user.uid, name, email);
+        const nextProfile = await getUserProfile(credential.user.uid);
+        setUser(credential.user);
+        setProfile(nextProfile);
       },
       logout,
       requestPasswordReset,
     }),
-    [loading, user],
+    [homeRoute, isAdmin, loading, profile, role, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

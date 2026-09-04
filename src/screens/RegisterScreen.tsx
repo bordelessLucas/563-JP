@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -17,31 +17,49 @@ export function RegisterScreen() {
   const [password, setPassword] = useState("");
   const { error, loading, register } = useAuthActions();
   const { register: createAccount } = useAuth();
+
+  const canSubmit = useMemo(
+    () =>
+      name.trim().length > 1 &&
+      email.trim().length > 3 &&
+      password.length >= 6 &&
+      !loading,
+    [email, loading, name, password],
+  );
+
   const handleRegister = async () => {
-    const registered = await register(name, email, password, () =>
-      createAccount(name, email, password),
+    if (!canSubmit) return;
+    await register(name.trim(), email.trim(), password, () =>
+      createAccount(name.trim(), email.trim(), password),
     );
-    if (registered) router.replace("/home");
   };
 
   return (
     <Container keyboardAware scroll>
       <View style={styles.content}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.back()}
+        >
           <Typography style={styles.back} variant="caption">
             Voltar
           </Typography>
         </Pressable>
-        <Typography variant="title">Crie seu espaço</Typography>
+        <Typography variant="title">Crie sua conta</Typography>
         <Typography style={styles.intro} variant="subtitle">
-          Salve seus endereços e acompanhe cada pedido com facilidade.
+          Em poucos passos você já pode explorar flores e presentes.
         </Typography>
         <View style={styles.form}>
           <Input
+            autoCapitalize="words"
+            autoComplete="name"
             icon="person-outline"
             label="Nome completo"
             onChangeText={setName}
             placeholder="Como podemos chamar você?"
+            textContentType="name"
             value={name}
           />
           <Input
@@ -51,6 +69,7 @@ export function RegisterScreen() {
             label="E-mail"
             onChangeText={setEmail}
             placeholder="voce@email.com"
+            textContentType="emailAddress"
             value={email}
           />
           <Input
@@ -59,23 +78,30 @@ export function RegisterScreen() {
             isPassword
             label="Senha"
             onChangeText={setPassword}
-            placeholder="Crie uma senha segura"
+            placeholder="Mínimo de 6 caracteres"
+            textContentType="newPassword"
             value={password}
           />
-          {error && (
+          {error ? (
             <Typography style={styles.error} variant="caption">
               {error}
             </Typography>
-          )}
+          ) : null}
           <Button
+            disabled={!canSubmit}
             label="Criar conta"
             loading={loading}
-            onPress={handleRegister}
+            onPress={() => {
+              void handleRegister();
+            }}
           />
         </View>
         <View style={styles.loginRow}>
           <Typography variant="caption">Já possui uma conta?</Typography>
-          <Pressable onPress={() => router.replace("/login")}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace("/login")}
+          >
             <Typography style={styles.link} variant="caption">
               Entrar
             </Typography>
@@ -109,6 +135,7 @@ const styles = StyleSheet.create({
   loginRow: {
     alignItems: "center",
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
     justifyContent: "center",
     marginTop: spacing.xl,

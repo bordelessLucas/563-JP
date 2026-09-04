@@ -9,7 +9,7 @@ import {
     View,
 } from "react-native";
 
-import { colors, fontFamily, spacing, type } from "@/src/components/theme";
+import { colors, fontFamily, radius, spacing, type } from "@/src/components/theme";
 
 type InputProps = TextInputProps & {
   label: string;
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
