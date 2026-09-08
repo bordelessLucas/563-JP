@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
+import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { DeliveryCalendar } from "@/src/components/DeliveryCalendar";
+import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { colors, radius, spacing } from "@/src/components/theme";
@@ -40,8 +42,11 @@ export default function CheckoutScheduleScreen() {
   const [periods, setPeriods] = useState<DeliveryPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [periodId, setPeriodId] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const minDate = useMemo(() => {
     const date = startOfDay(new Date());
@@ -60,6 +65,7 @@ export default function CheckoutScheduleScreen() {
     const load = async () => {
       try {
         setLoading(true);
+        setLoadError(null);
         const settings = await getOperationSettings();
         if (!active) return;
         setPeriods(settings.periods);
@@ -85,6 +91,13 @@ export default function CheckoutScheduleScreen() {
         setPeriodId(
           cart?.checkout?.deliveryPeriodId || settings.periods[0]?.id || "",
         );
+      } catch (err) {
+        if (!active) return;
+        setLoadError(
+          err instanceof Error
+            ? err.message
+            : "Não foi possível carregar as datas.",
+        );
       } finally {
         if (active) setLoading(false);
       }
@@ -98,6 +111,7 @@ export default function CheckoutScheduleScreen() {
     cart?.checkout?.deliveryPeriodId,
     maxDate,
     minDate,
+    reloadKey,
   ]);
 
   const selectedPeriod = periods.find((period) => period.id === periodId);
@@ -106,6 +120,7 @@ export default function CheckoutScheduleScreen() {
   const handleContinue = async () => {
     if (!canContinue || !cart || !selectedPeriod) return;
     setSaving(true);
+    setError(null);
     try {
       await saveCheckout({
         recipient: cart.checkout?.recipient ?? {
@@ -119,6 +134,12 @@ export default function CheckoutScheduleScreen() {
         deliveryPeriodLabel: selectedPeriod.label,
       });
       router.push("/checkout/summary" as Href);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível salvar a agenda. Tente de novo.",
+      );
     } finally {
       setSaving(false);
     }
@@ -132,15 +153,32 @@ export default function CheckoutScheduleScreen() {
     );
   }
 
+  if (loadError) {
+    return (
+      <Container>
+        <EmptyState
+          actionLabel="Tentar novamente"
+          description={loadError}
+          icon="alert-circle-outline"
+          onAction={() => setReloadKey((current) => current + 1)}
+          title="Não foi possível carregar as datas"
+        />
+      </Container>
+    );
+  }
+
   return (
     <Container scroll>
-      <Typography variant="caption">ETAPA 3 DE 5</Typography>
+      <CheckoutStepper step={3} />
       <Typography style={styles.title} variant="title">
         Quando entregar?
       </Typography>
+      {error ? (
+        <InlineNotice description={error} title="Erro ao salvar" tone="error" />
+      ) : null}
       <InlineNotice
-        description="Escolha a data no calendário. Meses anteriores ficam bloqueados e não há troca de ano."
-        title="Agenda da entrega"
+        description="Escolha a partir de amanhã, nos próximos 60 dias. Datas passadas não ficam disponíveis."
+        title="Data de entrega"
         tone="info"
       />
 

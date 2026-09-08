@@ -1,18 +1,27 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Href, Stack, useRouter } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
-import { Text, View } from '@/components/Themed';
+import { Button } from "@/src/components/Button";
+import { colors, spacing } from "@/src/components/theme";
+import { Typography } from "@/src/components/Typography";
 
 export default function NotFoundScreen() {
+  const router = useRouter();
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
+      <Stack.Screen options={{ title: "Não encontrado" }} />
       <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
-
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
-        </Link>
+        <Typography style={styles.title} variant="title">
+          Não encontramos essa tela
+        </Typography>
+        <Typography style={styles.description} variant="caption">
+          O endereço pode estar desatualizado ou o link não existe mais.
+        </Typography>
+        <Button
+          label="Ir para o início"
+          onPress={() => router.replace("/(tabs)" as Href)}
+        />
       </View>
     </>
   );
@@ -20,21 +29,18 @@ export default function NotFoundScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
+    backgroundColor: colors.canvas,
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    gap: spacing.md,
+    justifyContent: "center",
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    textAlign: "center",
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
+  description: {
+    marginBottom: spacing.md,
+    textAlign: "center",
   },
 });

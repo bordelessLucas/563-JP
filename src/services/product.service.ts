@@ -12,7 +12,12 @@ import {
 } from "firebase/firestore";
 
 import { firebaseApp } from "@/src/services/firebase";
-import { Product, StockStatus } from "@/src/types/catalog";
+import {
+  defaultStockQuantity,
+  Product,
+  StockStatus,
+  stockStatusFromQuantity,
+} from "@/src/types/catalog";
 
 const database = getFirestore(firebaseApp);
 
@@ -20,6 +25,17 @@ function mapProduct(id: string, data: Record<string, unknown>): Product {
   const images = Array.isArray(data.images)
     ? data.images.map((image) => String(image))
     : [];
+  const stockStatus = (data.stockStatus as StockStatus) ?? "in_stock";
+  const rawQty = data.stockQuantity;
+  const stockQuantity =
+    typeof rawQty === "number" && Number.isFinite(rawQty)
+      ? Math.max(0, Math.floor(rawQty))
+      : defaultStockQuantity(stockStatus);
+  const rawPromoPrice = data.promoPrice;
+  const promoPrice =
+    typeof rawPromoPrice === "number" && Number.isFinite(rawPromoPrice)
+      ? rawPromoPrice
+      : null;
 
   return {
     id,
@@ -30,7 +46,10 @@ function mapProduct(id: string, data: Record<string, unknown>): Product {
     images,
     active: Boolean(data.active),
     featured: Boolean(data.featured),
-    stockStatus: (data.stockStatus as StockStatus) ?? "in_stock",
+    stockQuantity,
+    stockStatus: stockStatusFromQuantity(stockQuantity),
+    promo: Boolean(data.promo),
+    promoPrice,
   };
 }
 
@@ -61,6 +80,11 @@ export async function listFeaturedProducts(): Promise<Product[]> {
   return products.filter((product) => product.featured);
 }
 
+export async function listPromoProducts(): Promise<Product[]> {
+  const products = await listActiveProducts();
+  return products.filter((product) => product.promo);
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
   const snapshot = await getDoc(doc(database, "products", id));
   if (!snapshot.exists()) return null;
@@ -87,14 +111,34 @@ export type ProductInput = {
   images: string[];
   active: boolean;
   featured: boolean;
+  stockQuantity: number;
   stockStatus: StockStatus;
+  promo: boolean;
+  promoPrice: number | null;
 };
 
-export async function createProduct(input: ProductInput): Promise<Product> {
-  const payload = {
+function normalizeProductInput(input: ProductInput) {
+  const stockQuantity = Math.max(0, Math.floor(input.stockQuantity));
+  const promoPrice =
+    input.promo &&
+    typeof input.promoPrice === "number" &&
+    Number.isFinite(input.promoPrice)
+      ? input.promoPrice
+      : null;
+  return {
     ...input,
     name: input.name.trim(),
     description: input.description.trim(),
+    stockQuantity,
+    stockStatus: stockStatusFromQuantity(stockQuantity),
+    promo: Boolean(input.promo),
+    promoPrice,
+  };
+}
+
+export async function createProduct(input: ProductInput): Promise<Product> {
+  const payload = {
+    ...normalizeProductInput(input),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -106,10 +150,29 @@ export async function updateProduct(
   id: string,
   input: Partial<ProductInput>,
 ): Promise<void> {
-  await updateDoc(doc(database, "products", id), {
+  const next: Record<string, unknown> = {
     ...input,
-    ...(input.name ? { name: input.name.trim() } : {}),
-    ...(input.description ? { description: input.description.trim() } : {}),
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (input.name) next.name = input.name.trim();
+  if (input.description !== undefined) {
+    next.description = input.description.trim();
+  }
+  if (input.stockQuantity !== undefined) {
+    const stockQuantity = Math.max(0, Math.floor(input.stockQuantity));
+    next.stockQuantity = stockQuantity;
+    next.stockStatus = stockStatusFromQuantity(stockQuantity);
+  }
+  if (input.promo !== undefined) {
+    next.promo = Boolean(input.promo);
+  }
+  if (input.promoPrice !== undefined || input.promo === false) {
+    next.promoPrice =
+      input.promo === false
+        ? null
+        : typeof input.promoPrice === "number" && Number.isFinite(input.promoPrice)
+          ? input.promoPrice
+          : null;
+  }
+  await updateDoc(doc(database, "products", id), next);
 }

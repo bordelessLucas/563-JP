@@ -22,7 +22,7 @@ import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
 import { listActiveCategories } from "@/src/services/category.service";
 import { getProductById } from "@/src/services/product.service";
-import { Product } from "@/src/types/catalog";
+import { Product, productEffectivePrice, hasPromoDiscount, isProductOnPromo } from "@/src/types/catalog";
 import { formatCurrency } from "@/src/utils/format";
 
 export function ProductDetailScreen() {
@@ -84,8 +84,10 @@ export function ProductDetailScreen() {
   }, [id]);
 
   const unavailable = product?.stockStatus === "out_of_stock";
-  const unitPrice = product?.price ?? 0;
+  const unitPrice = product ? productEffectivePrice(product) : 0;
   const totalPreview = unitPrice * quantity;
+  const onPromo = product ? isProductOnPromo(product) : false;
+  const discounted = product ? hasPromoDiscount(product) : false;
 
   const handleAddToCart = async () => {
     if (!product || unavailable) return;
@@ -94,14 +96,16 @@ export function ProductDetailScreen() {
       await addItem({
         productId: product.id,
         productName: product.name,
-        productImage: product.images[0],
+        productImage: product.images[0] ?? "",
         quantity,
-        unitPrice: product.price,
-        message,
+        unitPrice: productEffectivePrice(product),
+        message: message.trim(),
       });
       setAdded(true);
-    } catch {
-      setError("Não foi possível adicionar ao carrinho.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Não foi possível adicionar.",
+      );
     } finally {
       setSaving(false);
     }
@@ -149,9 +153,27 @@ export function ProductDetailScreen() {
                 <Typography variant="caption">{categoryName}</Typography>
               ) : null}
               <Typography variant="title">{product.name}</Typography>
-              <Typography style={styles.price} variant="display">
-                {formatCurrency(product.price)}
-              </Typography>
+              {onPromo ? (
+                <View style={styles.promoPill}>
+                  <Typography style={styles.promoPillLabel} variant="caption">
+                    Em promoção
+                  </Typography>
+                </View>
+              ) : null}
+              {discounted ? (
+                <View style={styles.priceBlock}>
+                  <Typography style={styles.priceOld} variant="caption">
+                    De {formatCurrency(product.price)}
+                  </Typography>
+                  <Typography style={styles.pricePromo} variant="display">
+                    {formatCurrency(unitPrice)}
+                  </Typography>
+                </View>
+              ) : (
+                <Typography style={styles.price} variant="display">
+                  {formatCurrency(unitPrice)}
+                </Typography>
+              )}
               <StockBadge status={product.stockStatus} />
 
               <Typography style={styles.sectionLabel} variant="caption">
@@ -297,6 +319,32 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 28,
     lineHeight: 34,
+  },
+  priceBlock: {
+    gap: 2,
+  },
+  priceOld: {
+    color: colors.muted,
+    textDecorationLine: "line-through",
+  },
+  pricePromo: {
+    color: colors.accent,
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 34,
+  },
+  promoPill: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.accent,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  promoPillLabel: {
+    color: colors.white,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
   sectionLabel: {
     fontWeight: "700",

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { colors, radius, spacing } from "@/src/components/theme";
+import { colors, radius, spacing, touchTarget } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 
 const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
@@ -222,9 +222,9 @@ const styles = StyleSheet.create({
   },
   navButton: {
     alignItems: "center",
-    height: 36,
+    height: touchTarget,
     justifyContent: "center",
-    width: 36,
+    width: touchTarget,
   },
   navDisabled: {
     opacity: 0.45,

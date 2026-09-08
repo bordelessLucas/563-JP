@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
@@ -15,14 +15,23 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { LoadingState } from "@/src/components/LoadingState";
 import { ProductCard } from "@/src/components/ProductCard";
+import { PromoModal } from "@/src/components/PromoModal";
 import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { listActiveBanners } from "@/src/services/banner.service";
+import {
+  getActivePromoModal,
+  listActiveHeroBanners,
+  listHomePromotions,
+} from "@/src/services/banner.service";
 import { listActiveCategories } from "@/src/services/category.service";
 import { listFeaturedProducts } from "@/src/services/product.service";
 import { Banner, Category, Product } from "@/src/types/catalog";
 import { greetingForNow } from "@/src/utils/format";
+import {
+  hasSeenPromoModal,
+  markPromoModalSeen,
+} from "@/src/utils/promoModalStorage";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CONTENT_PADDING = spacing.lg;
@@ -30,13 +39,21 @@ const GRID_GAP = spacing.sm;
 const CARD_WIDTH =
   (SCREEN_WIDTH - CONTENT_PADDING * 2 - GRID_GAP) / 2;
 
+const CATALOG_PROMO_HREF = {
+  pathname: "/(tabs)/catalog",
+  params: { filter: "promo" },
+} as const;
+
 export function HomeScreen() {
   const router = useRouter();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [banners, setBanners] = useState<Banner[]>([]);
+  const [heroBanners, setHeroBanners] = useState<Banner[]>([]);
+  const [homePromos, setHomePromos] = useState<Banner[]>([]);
+  const [modalPromo, setModalPromo] = useState<Banner | null>(null);
+  const [promoVisible, setPromoVisible] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
 
@@ -45,14 +62,27 @@ export function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
-      const [nextBanners, nextCategories, nextFeatured] = await Promise.all([
-        listActiveBanners(),
+      const [
+        nextHero,
+        nextHomePromos,
+        nextModalPromo,
+        nextCategories,
+        nextFeatured,
+        alreadySeen,
+      ] = await Promise.all([
+        listActiveHeroBanners(),
+        listHomePromotions(),
+        getActivePromoModal(),
         listActiveCategories(),
         listFeaturedProducts(),
+        hasSeenPromoModal(),
       ]);
-      setBanners(nextBanners);
+      setHeroBanners(nextHero);
+      setHomePromos(nextHomePromos);
+      setModalPromo(nextModalPromo);
       setCategories(nextCategories);
       setFeatured(nextFeatured);
+      setPromoVisible(Boolean(nextModalPromo) && !alreadySeen);
     } catch {
       setError("Não foi possível carregar a vitrine. Puxe para atualizar.");
     } finally {
@@ -65,14 +95,23 @@ export function HomeScreen() {
     void load();
   }, [load]);
 
-  const banner = banners[0];
+  const banner = heroBanners[0];
+  /** Card fixo na home: prioridade do modal, senão primeira campanha ativa. */
+  const weekPromo = useMemo(
+    () => modalPromo ?? homePromos[0] ?? null,
+    [modalPromo, homePromos],
+  );
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   );
   const firstName = profile?.name?.split(" ")[0] ?? "você";
 
-  const openBanner = () => {
+  const openCatalogPromo = () => {
+    router.push(CATALOG_PROMO_HREF as Href);
+  };
+
+  const openHero = () => {
     if (!banner) return;
     if (banner.destination.type === "category") {
       router.push({
@@ -81,13 +120,33 @@ export function HomeScreen() {
       });
       return;
     }
-    if (banner.destination.type === "product") {
+    if (banner.destination.type === "product" && banner.destination.id) {
       router.push(`/product/${banner.destination.id}`);
+      return;
     }
+    router.push("/(tabs)/catalog");
+  };
+
+  const closePromo = async () => {
+    setPromoVisible(false);
+    await markPromoModalSeen();
   };
 
   return (
     <Container onRefresh={() => void load(true)} refreshing={refreshing} scroll>
+      {modalPromo ? (
+        <PromoModal
+          onAction={() => {
+            void closePromo().then(() => openCatalogPromo());
+          }}
+          onClose={() => {
+            void closePromo();
+          }}
+          promo={modalPromo}
+          visible={!loading && !error && promoVisible}
+        />
+      ) : null}
+
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Typography variant="caption">FLORA & PRESENTES</Typography>
@@ -127,7 +186,7 @@ export function HomeScreen() {
               accessibilityHint="Abre a categoria ou produto em destaque"
               accessibilityLabel={`Banner ${banner.title}`}
               accessibilityRole="button"
-              onPress={openBanner}
+              onPress={openHero}
               style={styles.banner}
             >
               <ImageBackground
@@ -146,7 +205,11 @@ export function HomeScreen() {
                     <Typography style={styles.bannerCtaLabel} variant="caption">
                       Explorar agora
                     </Typography>
-                    <Ionicons color={colors.primary} name="arrow-forward" size={14} />
+                    <Ionicons
+                      color={colors.primary}
+                      name="arrow-forward"
+                      size={14}
+                    />
                   </View>
                 </View>
               </ImageBackground>
@@ -169,32 +232,45 @@ export function HomeScreen() {
           </View>
 
           <View style={styles.categoryShell}>
-            <ScrollView
-              contentContainerStyle={styles.categoryContent}
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-            >
-              {categories.map((category) => (
-                <Pressable
-                  key={category.id}
-                  accessibilityLabel={`Categoria ${category.name}`}
-                  accessibilityRole="button"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(tabs)/catalog",
-                      params: { categoryId: category.id },
-                    })
-                  }
-                  style={styles.category}
-                >
-                  <Image source={{ uri: category.image }} style={styles.categoryImage} />
-                  <Typography numberOfLines={1} style={styles.categoryLabel} variant="caption">
-                    {category.name}
-                  </Typography>
-                </Pressable>
-              ))}
-            </ScrollView>
+            {categories.length === 0 ? (
+              <Typography style={styles.categoryEmpty} variant="caption">
+                Categorias aparecem aqui quando estiverem disponíveis.
+              </Typography>
+            ) : (
+              <ScrollView
+                contentContainerStyle={styles.categoryContent}
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+              >
+                {categories.map((category) => (
+                  <Pressable
+                    key={category.id}
+                    accessibilityLabel={`Categoria ${category.name}`}
+                    accessibilityRole="button"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/catalog",
+                        params: { categoryId: category.id },
+                      })
+                    }
+                    style={styles.category}
+                  >
+                    <Image
+                      source={{ uri: category.image }}
+                      style={styles.categoryImage}
+                    />
+                    <Typography
+                      numberOfLines={1}
+                      style={styles.categoryLabel}
+                      variant="caption"
+                    >
+                      {category.name}
+                    </Typography>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           <View style={styles.sectionHeader}>
@@ -223,6 +299,44 @@ export function HomeScreen() {
               ))}
             </View>
           )}
+
+          {weekPromo ? (
+            <Pressable
+              accessibilityHint="Abre o catálogo filtrado por promoção"
+              accessibilityLabel={`Promoção da semana: ${weekPromo.title}`}
+              accessibilityRole="button"
+              onPress={openCatalogPromo}
+              style={styles.weekPromo}
+            >
+              <Image
+                source={{ uri: weekPromo.image }}
+                style={styles.weekPromoImage}
+              />
+              <View style={styles.weekPromoCopy}>
+                <Typography style={styles.weekPromoEyebrow} variant="caption">
+                  Promoção da semana
+                </Typography>
+                <Typography style={styles.weekPromoTitle} variant="subtitle">
+                  {weekPromo.title}
+                </Typography>
+                {weekPromo.body ? (
+                  <Typography numberOfLines={2} variant="caption">
+                    {weekPromo.body}
+                  </Typography>
+                ) : null}
+                <View style={styles.weekPromoCta}>
+                  <Typography style={styles.weekPromoCtaLabel} variant="caption">
+                    Ver itens em promoção
+                  </Typography>
+                  <Ionicons
+                    color={colors.white}
+                    name="arrow-forward"
+                    size={14}
+                  />
+                </View>
+              </View>
+            </Pressable>
+          ) : null}
         </>
       ) : null}
     </Container>
@@ -285,7 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     marginTop: spacing.xs,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -311,6 +425,10 @@ const styles = StyleSheet.create({
     height: 112,
     marginBottom: spacing.xl,
     marginHorizontal: -CONTENT_PADDING,
+  },
+  categoryEmpty: {
+    paddingHorizontal: CONTENT_PADDING,
+    paddingTop: spacing.md,
   },
   categoryContent: {
     gap: spacing.sm,
@@ -338,7 +456,50 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: GRID_GAP,
-    paddingBottom: spacing.xl,
+    marginBottom: spacing.xl,
     width: "100%",
+  },
+  weekPromo: {
+    backgroundColor: colors.softAccent,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.xl,
+    overflow: "hidden",
+  },
+  weekPromoImage: {
+    backgroundColor: colors.secondary,
+    height: 140,
+    width: "100%",
+  },
+  weekPromoCopy: {
+    gap: spacing.xs,
+    padding: spacing.lg,
+  },
+  weekPromoEyebrow: {
+    color: colors.accent,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  weekPromoTitle: {
+    color: colors.ink,
+    fontWeight: "700",
+  },
+  weekPromoCta: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    flexDirection: "row",
+    gap: 6,
+    marginTop: spacing.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  weekPromoCtaLabel: {
+    color: colors.white,
+    fontWeight: "700",
   },
 });

@@ -16,7 +16,7 @@ import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { listActiveCategories } from "@/src/services/category.service";
 import { listActiveProducts } from "@/src/services/product.service";
-import { Category, Product } from "@/src/types/catalog";
+import { Category, isProductOnPromo, Product } from "@/src/types/catalog";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CONTENT_PADDING = spacing.lg;
@@ -24,16 +24,26 @@ const GRID_GAP = spacing.sm;
 const CARD_WIDTH =
   (SCREEN_WIDTH - CONTENT_PADDING * 2 - GRID_GAP) / 2;
 
+type CatalogFilter = "all" | "promo" | string;
+
 export function CatalogScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ categoryId?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    categoryId?: string | string[];
+    filter?: string | string[];
+  }>();
   const rawCategoryId = Array.isArray(params.categoryId)
     ? params.categoryId[0]
     : params.categoryId;
+  const rawFilter = Array.isArray(params.filter)
+    ? params.filter[0]
+    : params.filter;
+
   const selectedCategoryId =
     typeof rawCategoryId === "string" && rawCategoryId.length > 0
       ? rawCategoryId
       : undefined;
+  const promoFilter = rawFilter === "promo";
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,16 +83,39 @@ export function CatalogScreen() {
     ? categoryMap.get(selectedCategoryId)
     : undefined;
 
+  const activeFilter: CatalogFilter = promoFilter
+    ? "promo"
+    : selectedCategoryId || "all";
+
   const filteredProducts = useMemo(() => {
+    if (promoFilter) {
+      return products.filter((product) => isProductOnPromo(product));
+    }
     if (!selectedCategoryId) return products;
     return products.filter(
       (product) => product.categoryId === selectedCategoryId,
     );
-  }, [products, selectedCategoryId]);
+  }, [products, promoFilter, selectedCategoryId]);
 
   const clearFilter = () => {
-    router.setParams({ categoryId: "" });
+    router.setParams({ categoryId: "", filter: "" });
   };
+
+  const selectAll = () => clearFilter();
+
+  const selectPromo = () => {
+    router.setParams({ categoryId: "", filter: "promo" });
+  };
+
+  const selectCategory = (categoryId: string) => {
+    router.setParams({ categoryId, filter: "" });
+  };
+
+  const filterLabel = promoFilter
+    ? "em promoção"
+    : selectedCategoryName
+      ? `em ${selectedCategoryName}`
+      : "";
 
   return (
     <Container onRefresh={() => void load(true)} refreshing={refreshing} scroll>
@@ -91,7 +124,7 @@ export function CatalogScreen() {
         Encontre o presente certo
       </Typography>
       <Typography style={styles.subtitle} variant="caption">
-        Toque em uma categoria para filtrar. Puxe para atualizar.
+        Filtre por promoção ou categoria. Puxe para atualizar.
       </Typography>
 
       <View style={styles.filtersShell}>
@@ -103,28 +136,49 @@ export function CatalogScreen() {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ selected: !selectedCategoryId }}
-            onPress={clearFilter}
-            style={[styles.chip, !selectedCategoryId && styles.chipActive]}
+            accessibilityState={{ selected: activeFilter === "all" }}
+            onPress={selectAll}
+            style={[styles.chip, activeFilter === "all" && styles.chipActive]}
           >
             <Typography
               style={[
                 styles.chipLabel,
-                !selectedCategoryId && styles.chipLabelActive,
+                activeFilter === "all" && styles.chipLabelActive,
               ]}
               variant="caption"
             >
               Todos
             </Typography>
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: promoFilter }}
+            onPress={selectPromo}
+            style={[
+              styles.chip,
+              styles.chipPromo,
+              promoFilter && styles.chipPromoActive,
+            ]}
+          >
+            <Typography
+              style={[
+                styles.chipLabel,
+                styles.chipPromoLabel,
+                promoFilter && styles.chipLabelActive,
+              ]}
+              variant="caption"
+            >
+              Promoção
+            </Typography>
+          </Pressable>
           {categories.map((category) => {
-            const selected = selectedCategoryId === category.id;
+            const selected = activeFilter === category.id;
             return (
               <Pressable
                 key={category.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                onPress={() => router.setParams({ categoryId: category.id })}
+                onPress={() => selectCategory(category.id)}
                 style={[styles.chip, selected && styles.chipActive]}
               >
                 <Typography
@@ -145,9 +199,9 @@ export function CatalogScreen() {
           <Typography style={styles.resultLabel} variant="caption">
             {filteredProducts.length}{" "}
             {filteredProducts.length === 1 ? "produto" : "produtos"}
-            {selectedCategoryName ? ` em ${selectedCategoryName}` : ""}
+            {filterLabel ? ` ${filterLabel}` : ""}
           </Typography>
-          {selectedCategoryId ? (
+          {activeFilter !== "all" ? (
             <Pressable
               accessibilityRole="button"
               hitSlop={8}
@@ -169,16 +223,24 @@ export function CatalogScreen() {
           description={error}
           icon="alert-circle-outline"
           onAction={() => void load()}
-          title="Falha no catálogo"
+          title="Não foi possível carregar os produtos"
         />
       ) : null}
 
       {!loading && !error && filteredProducts.length === 0 ? (
         <EmptyState
           actionLabel="Ver todos"
-          description="Tente outra categoria ou limpe o filtro."
+          description={
+            promoFilter
+              ? "Nenhum item em promoção agora. Veja o catálogo completo."
+              : "Tente outra categoria ou limpe o filtro."
+          }
           onAction={clearFilter}
-          title="Nenhum produto nesta categoria"
+          title={
+            promoFilter
+              ? "Sem promoções no momento"
+              : "Nenhum produto nesta categoria"
+          }
         />
       ) : null}
 
@@ -232,9 +294,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
+  chipPromo: {
+    backgroundColor: colors.softAccent,
+    borderColor: colors.border,
+  },
+  chipPromoActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
   chipLabel: {
     color: colors.ink,
     fontWeight: "700",
+  },
+  chipPromoLabel: {
+    color: colors.accent,
   },
   chipLabelActive: {
     color: colors.white,

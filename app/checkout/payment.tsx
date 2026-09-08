@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
+import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
@@ -14,6 +15,10 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
 import { createOrderFromCart } from "@/src/services/order.service";
 import { PaymentMethod } from "@/src/types/order";
+import {
+  checkoutRecoveryHref,
+  isCartReadyForPayment,
+} from "@/src/utils/checkout";
 import { formatCurrency } from "@/src/utils/format";
 
 type PaymentPhase = "choose" | "awaiting" | "failed";
@@ -41,17 +46,33 @@ export default function CheckoutPaymentScreen() {
   );
 
   const hasItems = Boolean(cart && cart.items.length > 0);
+  const readyToPay = isCartReadyForPayment(cart);
 
   async function copyPix() {
     await Clipboard.setStringAsync(MOCK_PIX_CODE);
-    Alert.alert("Copiado", "Código PIX fictício copiado.");
+    Alert.alert("Copiado", "Código de exemplo copiado.");
+  }
+
+  async function goToSuccess(orderId: string, orderNumber: string) {
+    router.replace(
+      `/checkout/success?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}` as Href,
+    );
   }
 
   async function simulateApprove() {
     if (!user || !cart || cart.items.length === 0) return;
+    if (!readyToPay) {
+      setError("Complete destinatário, endereço e agenda antes de pagar.");
+      router.replace(checkoutRecoveryHref(cart.checkout) as Href);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     setPhase("awaiting");
+
+    let createdOrderId: string | null = null;
+    let createdOrderNumber: string | null = null;
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -62,11 +83,26 @@ export default function CheckoutPaymentScreen() {
         cart,
         paymentMethod: method,
       });
-      await emptyCart();
-      router.replace(
-        `/checkout/success?orderId=${order.id}&orderNumber=${encodeURIComponent(order.orderNumber)}` as Href,
-      );
+      createdOrderId = order.id;
+      createdOrderNumber = order.orderNumber;
+
+      try {
+        await emptyCart();
+      } catch {
+        // Pedido já existe — não falhar a UI nem permitir retry que duplica.
+        try {
+          await emptyCart();
+        } catch {
+          /* ignore second clear failure */
+        }
+      }
+
+      await goToSuccess(order.id, order.orderNumber);
     } catch (err) {
+      if (createdOrderId && createdOrderNumber) {
+        await goToSuccess(createdOrderId, createdOrderNumber);
+        return;
+      }
       setPhase("failed");
       setError(
         err instanceof Error ? err.message : "Não foi possível criar o pedido.",
@@ -78,7 +114,9 @@ export default function CheckoutPaymentScreen() {
 
   function simulateFail() {
     setPhase("failed");
-    setError("Pagamento simulado recusado. Tente novamente.");
+    setError(
+      "Não foi possível confirmar. Nada foi cobrado. Você pode tentar de novo.",
+    );
   }
 
   function resetFlow() {
@@ -100,21 +138,37 @@ export default function CheckoutPaymentScreen() {
     );
   }
 
+  if (hasItems && !readyToPay && phase !== "awaiting") {
+    return (
+      <Container>
+        <EmptyState
+          actionLabel="Completar checkout"
+          description="Faltam dados de destinatário, endereço ou agenda."
+          icon="alert-circle-outline"
+          onAction={() =>
+            router.replace(checkoutRecoveryHref(cart?.checkout) as Href)
+          }
+          title="Checkout incompleto"
+        />
+      </Container>
+    );
+  }
+
   return (
     <Container scroll>
       <View style={styles.content}>
-        <Typography variant="caption">ETAPA 5 DE 5 · PAGAMENTO SIMULADO</Typography>
+        <CheckoutStepper step={5} />
         <Typography style={styles.title} variant="title">
-          Finalize sem cobrança real
+          Pagamento
         </Typography>
         <InlineNotice
-          description="PIX e cartão são fictícios. Ao aprovar, o pedido é gravado para acompanhamento e para o admin."
-          title="Ambiente de demonstração"
+          description="PIX e cartão são só para você ver o fluxo. Ao confirmar, o pedido é registrado para acompanhamento."
+          title="Nenhuma cobrança nesta versão"
           tone="info"
         />
 
         <View style={styles.totalCard}>
-          <Typography variant="caption">Total a pagar</Typography>
+          <Typography variant="caption">Total do pedido</Typography>
           <Typography style={styles.totalValue} variant="title">
             {totalLabel}
           </Typography>
@@ -122,7 +176,7 @@ export default function CheckoutPaymentScreen() {
 
         {phase === "awaiting" ? (
           <View style={styles.awaitingCard}>
-            <LoadingState label="Confirmando pagamento simulado…" />
+            <LoadingState label="Confirmando pedido…" />
             <InlineNotice
               description="Aguarde um instante. Em seguida você verá o número do pedido."
               title="Processando"
@@ -176,19 +230,17 @@ export default function CheckoutPaymentScreen() {
             {method === "pix" ? (
               <View style={styles.card}>
                 <Typography style={styles.cardTitle} variant="caption">
-                  QR / Copia e cola (fictício)
+                  PIX (exemplo)
                 </Typography>
                 <View style={styles.qrPlaceholder}>
                   <Typography style={styles.qrMark} variant="title">
                     QR
                   </Typography>
-                  <Typography variant="caption">Mock · não processa</Typography>
+                  <Typography variant="caption">
+                    Código de exemplo — não gera pagamento
+                  </Typography>
                 </View>
-                <Typography
-                  selectable
-                  style={styles.pixCode}
-                  variant="caption"
-                >
+                <Typography selectable style={styles.pixCode} variant="caption">
                   {MOCK_PIX_CODE}
                 </Typography>
                 <Button
@@ -224,12 +276,12 @@ export default function CheckoutPaymentScreen() {
 
             <View style={styles.actions}>
               <Button
-                label="Confirmar pagamento"
+                label="Confirmar pedido"
                 loading={busy}
                 onPress={() => void simulateApprove()}
               />
               <Button
-                label="Simular falha"
+                label="Testar falha de pagamento"
                 onPress={simulateFail}
                 variant="outline"
               />

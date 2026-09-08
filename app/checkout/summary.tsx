@@ -1,7 +1,8 @@
 import { Href, useRouter } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
+import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { colors, radius, spacing } from "@/src/components/theme";
@@ -33,7 +34,7 @@ export default function CheckoutSummaryScreen() {
   return (
     <Container scroll>
       <View style={styles.content}>
-        <Typography variant="caption">ETAPA 4 DE 5</Typography>
+        <CheckoutStepper step={4} />
         <Typography style={styles.title} variant="title">
           Revise antes de pagar
         </Typography>
@@ -53,9 +54,20 @@ export default function CheckoutSummaryScreen() {
         )}
 
         <View style={styles.card}>
-          <Typography style={styles.cardTitle} variant="caption">
-            Entregar para
-          </Typography>
+          <View style={styles.cardHeader}>
+            <Typography style={styles.cardTitle} variant="caption">
+              Entregar para
+            </Typography>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push("/checkout/recipient" as Href)}
+            >
+              <Typography style={styles.editLink} variant="caption">
+                Editar
+              </Typography>
+            </Pressable>
+          </View>
           <Typography style={styles.value} variant="body">
             {recipient?.name || "—"}
           </Typography>
@@ -66,9 +78,20 @@ export default function CheckoutSummaryScreen() {
         </View>
 
         <View style={styles.card}>
-          <Typography style={styles.cardTitle} variant="caption">
-            Endereço
-          </Typography>
+          <View style={styles.cardHeader}>
+            <Typography style={styles.cardTitle} variant="caption">
+              Endereço
+            </Typography>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push("/checkout/address" as Href)}
+            >
+              <Typography style={styles.editLink} variant="caption">
+                Editar
+              </Typography>
+            </Pressable>
+          </View>
           <Typography style={styles.value} variant="body">
             {address
               ? `${address.street}, ${address.number}${
@@ -87,9 +110,20 @@ export default function CheckoutSummaryScreen() {
         </View>
 
         <View style={styles.card}>
-          <Typography style={styles.cardTitle} variant="caption">
-            Agenda
-          </Typography>
+          <View style={styles.cardHeader}>
+            <Typography style={styles.cardTitle} variant="caption">
+              Agenda
+            </Typography>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push("/checkout/schedule" as Href)}
+            >
+              <Typography style={styles.editLink} variant="caption">
+                Editar
+              </Typography>
+            </Pressable>
+          </View>
           <Typography style={styles.value} variant="body">
             {checkout?.deliveryDate
               ? formatDateLabel(checkout.deliveryDate)
@@ -131,7 +165,9 @@ export default function CheckoutSummaryScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="caption">Entrega</Typography>
+            <Typography variant="caption">
+              Entrega (ilustrativa nesta versão)
+            </Typography>
             <Typography variant="body">
               {formatCurrency(cart?.deliveryFee ?? 0)}
             </Typography>
@@ -179,9 +215,18 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
   },
+  cardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.xs,
+  },
   cardTitle: {
     fontWeight: "700",
-    marginBottom: spacing.xs,
+  },
+  editLink: {
+    color: colors.primary,
+    fontWeight: "700",
   },
   value: {
     fontWeight: "700",

@@ -80,8 +80,31 @@ export function deliveryStatusLabel(status: string): string {
 
 /** Timeline visual para o cliente (sem GPS). */
 export const CLIENT_TIMELINE_STEPS = [
-  { key: "paid", label: "Confirmado", match: ["paid", "preparing", "ready_for_delivery", "out_for_delivery", "delivered"] },
-  { key: "preparing", label: "Preparando", match: ["preparing", "ready_for_delivery", "out_for_delivery", "delivered"] },
-  { key: "out_for_delivery", label: "Saiu para entrega", match: ["out_for_delivery", "delivered"] },
+  {
+    key: "paid",
+    label: "Confirmado",
+    match: [
+      "paid",
+      "preparing",
+      "ready_for_delivery",
+      "out_for_delivery",
+      "delivered",
+    ],
+  },
+  {
+    key: "preparing",
+    label: "Preparando",
+    match: ["preparing", "ready_for_delivery", "out_for_delivery", "delivered"],
+  },
+  {
+    key: "ready_for_delivery",
+    label: "Pronto para entrega",
+    match: ["ready_for_delivery", "out_for_delivery", "delivered"],
+  },
+  {
+    key: "out_for_delivery",
+    label: "Saiu para entrega",
+    match: ["out_for_delivery", "delivered"],
+  },
   { key: "delivered", label: "Entregue", match: ["delivered"] },
 ] as const;

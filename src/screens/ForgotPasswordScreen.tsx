@@ -13,10 +13,17 @@ export function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const { error, loading, requestReset } = useAuthActions();
 
   const handleReset = async () => {
-    const requested = await requestReset(email);
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setLocalError("Informe o e-mail da conta.");
+      return;
+    }
+    setLocalError(null);
+    const requested = await requestReset(trimmed);
     if (requested) setSent(true);
   };
 
@@ -38,13 +45,16 @@ export function ForgotPasswordScreen() {
             icon="mail-outline"
             keyboardType="email-address"
             label="E-mail"
-            onChangeText={setEmail}
+            onChangeText={(value) => {
+              setEmail(value);
+              setLocalError(null);
+            }}
             placeholder="voce@email.com"
             value={email}
           />
-          {error && (
+          {(localError || error) && (
             <Typography style={styles.error} variant="caption">
-              {error}
+              {localError || error}
             </Typography>
           )}
           {sent && (
@@ -52,7 +62,21 @@ export function ForgotPasswordScreen() {
               Link enviado. Verifique seu e-mail.
             </Typography>
           )}
-          <Button label="Enviar link" loading={loading} onPress={handleReset} />
+          <Button
+            disabled={!email.trim()}
+            label="Enviar link"
+            loading={loading}
+            onPress={() => {
+              void handleReset();
+            }}
+          />
+          {sent ? (
+            <Button
+              label="Ir para o login"
+              onPress={() => router.replace("/login")}
+              variant="outline"
+            />
+          ) : null}
         </View>
       </View>
     </Container>

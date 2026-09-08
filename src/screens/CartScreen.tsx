@@ -31,6 +31,8 @@ export function CartScreen() {
     removeItem,
   } = useCart();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [continuing, setContinuing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -61,8 +63,11 @@ export function CartScreen() {
     }
 
     setSavingId(productId);
+    setActionError(null);
     try {
       await setItemQuantity(productId, quantity - 1);
+    } catch {
+      setActionError("Não foi possível atualizar a quantidade.");
     } finally {
       setSavingId(null);
     }
@@ -70,10 +75,34 @@ export function CartScreen() {
 
   const handleIncrease = async (productId: string, quantity: number) => {
     setSavingId(productId);
+    setActionError(null);
     try {
       await setItemQuantity(productId, quantity + 1);
+    } catch {
+      setActionError("Não foi possível atualizar a quantidade.");
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!cart || continuing) return;
+    setContinuing(true);
+    setActionError(null);
+    try {
+      for (const item of cart.items) {
+        const draft = messageDrafts[item.productId] ?? item.message;
+        if (draft !== item.message) {
+          await setItemMessage(item.productId, draft);
+        }
+      }
+      router.push("/checkout/recipient" as Href);
+    } catch {
+      setActionError(
+        "Não foi possível salvar as mensagens. Tente de novo.",
+      );
+    } finally {
+      setContinuing(false);
     }
   };
 
@@ -101,12 +130,20 @@ export function CartScreen() {
       ) : null}
 
       {items.length > 0 ? (
-        <>
+        <View style={styles.content}>
           <InlineNotice
             description="Inclua uma mensagem por item se quiser. Seus dados ficam salvos entre as etapas."
             title="Personalize antes de continuar"
             tone="info"
           />
+
+          {actionError ? (
+            <InlineNotice
+              description={actionError}
+              title="Algo deu errado"
+              tone="error"
+            />
+          ) : null}
 
           <View style={styles.list}>
             {items.map((item) => (
@@ -177,6 +214,8 @@ export function CartScreen() {
                   />
 
                   <Pressable
+                    accessibilityRole="button"
+                    hitSlop={8}
                     onPress={() => {
                       Alert.alert(
                         "Remover item",
@@ -193,6 +232,7 @@ export function CartScreen() {
                         ],
                       );
                     }}
+                    style={styles.removeHit}
                   >
                     <Typography style={styles.remove} variant="caption">
                       Remover
@@ -210,10 +250,15 @@ export function CartScreen() {
                 {formatCurrency(cart?.subtotal ?? 0)}
               </Typography>
             </View>
-            <View style={styles.summaryRow}>
-              <Typography variant="caption">Entrega (estimada)</Typography>
-              <Typography variant="body">
-                {formatCurrency(cart?.deliveryFee ?? 0)}
+            <View style={styles.feeBlock}>
+              <View style={styles.summaryRow}>
+                <Typography variant="caption">Frete</Typography>
+                <Typography variant="body">
+                  {formatCurrency(cart?.deliveryFee ?? 0)}
+                </Typography>
+              </View>
+              <Typography style={styles.feeHint} variant="caption">
+                Valor ilustrativo nesta versão — não é cobrança real.
               </Typography>
             </View>
             <View style={styles.summaryRow}>
@@ -228,9 +273,12 @@ export function CartScreen() {
 
           <Button
             label="Continuar para entrega"
-            onPress={() => router.push("/checkout/recipient" as Href)}
+            loading={continuing}
+            onPress={() => {
+              void handleContinue();
+            }}
           />
-        </>
+        </View>
       ) : null}
     </Container>
   );
@@ -240,10 +288,12 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: spacing.lg,
   },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
   list: {
     gap: spacing.md,
-    marginBottom: spacing.lg,
-    marginTop: spacing.lg,
   },
   card: {
     backgroundColor: colors.surface,
@@ -317,19 +367,30 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: "700",
   },
+  removeHit: {
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    minHeight: 44,
+    paddingVertical: spacing.sm,
+  },
   summary: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+    gap: spacing.md,
     padding: spacing.lg,
   },
   summaryRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+  feeBlock: {
+    gap: spacing.xs,
+  },
+  feeHint: {
+    color: colors.muted,
   },
   totalLabel: {
     color: colors.ink,

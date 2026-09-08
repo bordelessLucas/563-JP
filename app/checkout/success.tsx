@@ -86,10 +86,13 @@ export default function CheckoutSuccessScreen() {
           <Button
             disabled={!orderId}
             label="Acompanhar pedido"
-            onPress={() => router.replace(`/order/${orderId}` as Href)}
+            onPress={() => {
+              if (!orderId) return;
+              router.replace(`/order/${orderId}` as Href);
+            }}
           />
           <Button
-            label="Ver meus pedidos"
+            label="Ver lista de pedidos"
             onPress={() => router.replace("/(tabs)/orders" as Href)}
             variant="outline"
           />

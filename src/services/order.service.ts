@@ -103,6 +103,20 @@ export async function createOrderFromCart(input: {
   if (!cart.checkout?.address || !cart.checkout.recipient) {
     throw new Error("Checkout incompleto para criar o pedido.");
   }
+  if (
+    !cart.checkout.deliveryDate?.trim() ||
+    !cart.checkout.deliveryPeriodId?.trim() ||
+    !cart.checkout.deliveryPeriodLabel?.trim()
+  ) {
+    throw new Error("Informe data e período de entrega antes de pagar.");
+  }
+  if (
+    !cart.checkout.recipient.name.trim() ||
+    !cart.checkout.address.street.trim() ||
+    !cart.checkout.address.number.trim()
+  ) {
+    throw new Error("Destinatário ou endereço incompletos.");
+  }
   if (cart.items.length === 0) {
     throw new Error("Carrinho vazio.");
   }

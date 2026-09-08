@@ -1,6 +1,6 @@
 import { Href, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
@@ -52,9 +52,13 @@ export function OrdersScreen() {
     }, [load]),
   );
 
-  if (loading) {
+  if (loading && orders.length === 0 && !error) {
     return (
       <Container>
+        <Typography variant="caption">PEDIDOS</Typography>
+        <Typography style={styles.title} variant="title">
+          Acompanhe suas compras
+        </Typography>
         <LoadingState label="Carregando pedidos…" />
       </Container>
     );
@@ -74,7 +78,11 @@ export function OrdersScreen() {
         Acompanhe suas compras
       </Typography>
 
-      {error ? (
+      {loading ? (
+        <LoadingState label="Carregando pedidos…" />
+      ) : null}
+
+      {!loading && error ? (
         <View style={styles.notice}>
           <InlineNotice
             description={error}
@@ -94,7 +102,7 @@ export function OrdersScreen() {
         </View>
       ) : null}
 
-      {orders.length === 0 ? (
+      {!loading && !error && orders.length === 0 ? (
         <EmptyState
           actionLabel={itemCount > 0 ? "Ir ao carrinho" : "Explorar catálogo"}
           description={
@@ -110,42 +118,70 @@ export function OrdersScreen() {
           }
           title="Nenhum pedido ainda"
         />
-      ) : (
+      ) : null}
+
+      {!loading && orders.length > 0 ? (
         <View style={styles.list}>
-          {orders.map((order) => (
-            <Pressable
-              key={order.id}
-              accessibilityRole="button"
-              onPress={() => router.push(`/order/${order.id}` as Href)}
-              style={({ pressed }) => [
-                styles.card,
-                pressed && styles.cardPressed,
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <Typography style={styles.orderNumber} variant="body">
-                  {order.orderNumber}
-                </Typography>
-                <View style={styles.badge}>
-                  <Typography style={styles.badgeLabel} variant="caption">
-                    {orderStatusLabel(order.orderStatus)}
-                  </Typography>
+          {orders.map((order) => {
+            const firstItem = order.items[0];
+            const itemSummary = firstItem
+              ? order.items.length > 1
+                ? `${firstItem.productName} · ${order.items.length} itens`
+                : firstItem.productName
+              : "Pedido sem itens";
+            const thumb = firstItem?.productImage;
+
+            return (
+              <Pressable
+                key={order.id}
+                accessibilityRole="button"
+                onPress={() => router.push(`/order/${order.id}` as Href)}
+                style={({ pressed }) => [
+                  styles.card,
+                  pressed && styles.cardPressed,
+                ]}
+              >
+                <View style={styles.cardRow}>
+                  {thumb ? (
+                    <Image
+                      accessibilityIgnoresInvertColors
+                      source={{ uri: thumb }}
+                      style={styles.thumb}
+                    />
+                  ) : (
+                    <View style={[styles.thumb, styles.thumbFallback]} />
+                  )}
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHeader}>
+                      <Typography style={styles.orderNumber} variant="body">
+                        {order.orderNumber}
+                      </Typography>
+                      <View style={styles.badge}>
+                        <Typography style={styles.badgeLabel} variant="caption">
+                          {orderStatusLabel(order.orderStatus)}
+                        </Typography>
+                      </View>
+                    </View>
+                    <Typography numberOfLines={1} variant="caption">
+                      {itemSummary}
+                    </Typography>
+                    <Typography variant="caption">
+                      {formatDateTimeLabel(order.createdAt)}
+                    </Typography>
+                    <Typography variant="caption">
+                      Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
+                      {order.deliveryPeriodLabel}
+                    </Typography>
+                    <Typography style={styles.total} variant="body">
+                      {formatCurrency(order.total)}
+                    </Typography>
+                  </View>
                 </View>
-              </View>
-              <Typography variant="caption">
-                {formatDateTimeLabel(order.createdAt)}
-              </Typography>
-              <Typography variant="caption">
-                Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
-                {order.deliveryPeriodLabel}
-              </Typography>
-              <Typography style={styles.total} variant="body">
-                {formatCurrency(order.total)}
-              </Typography>
-            </Pressable>
-          ))}
+              </Pressable>
+            );
+          })}
         </View>
-      )}
+      ) : null}
     </Container>
   );
 }
@@ -170,11 +206,27 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   cardPressed: {
     opacity: 0.92,
+  },
+  cardRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  thumb: {
+    backgroundColor: colors.secondary,
+    borderRadius: radius.sm,
+    height: 56,
+    width: 56,
+  },
+  thumbFallback: {
+    backgroundColor: colors.softAccent,
+  },
+  cardBody: {
+    flex: 1,
+    gap: spacing.xs,
   },
   cardHeader: {
     alignItems: "center",

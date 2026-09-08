@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
+import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
+import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
@@ -23,29 +25,30 @@ const modules: DashboardModule[] = [
   {
     icon: "receipt-outline",
     title: "Pedidos",
-    description: "Listagem, detalhes e avanço manual de status.",
+    description: "Liste pedidos e avance o status da entrega.",
     href: "/admin/orders" as Href,
     status: "live",
   },
   {
     icon: "flower-outline",
     title: "Produtos",
-    description: "Criar, ativar/desativar e listar produtos.",
+    description: "Preço, estoque, destaque e ativação do catálogo.",
     href: "/admin/products" as Href,
     status: "live",
   },
   {
     icon: "pricetags-outline",
     title: "Categorias",
-    description: "Organização do catálogo e ordenação.",
+    description: "Nome, ordem, imagem e ativação das seções.",
     href: "/admin/categories" as Href,
     status: "live",
   },
   {
     icon: "images-outline",
-    title: "Banners",
-    description: "Campanhas e destinos (service pronto).",
-    status: "soon",
+    title: "Promoções",
+    description: "Lance campanhas e o modal prioritário da vitrine.",
+    href: "/admin/promotions" as Href,
+    status: "live",
   },
   {
     icon: "settings-outline",
@@ -66,7 +69,9 @@ function buildStats(orders: Order[]) {
   const delivering = orders.filter(
     (order) => order.orderStatus === "out_for_delivery",
   ).length;
-  const done = orders.filter((order) => order.orderStatus === "delivered").length;
+  const done = orders.filter(
+    (order) => order.orderStatus === "delivered",
+  ).length;
 
   return [
     { label: "Pedidos do dia", value: String(todayCount) },
@@ -81,12 +86,19 @@ export function AdminDashboardScreen() {
   const { profile, logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       setOrders(await listAllOrders());
-    } catch {
+    } catch (err) {
       setOrders([]);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar o painel.",
+      );
     } finally {
       setLoading(false);
     }
@@ -106,12 +118,26 @@ export function AdminDashboardScreen() {
       <View style={styles.header}>
         <View>
           <Typography variant="caption">PAINEL ADMINISTRATIVO</Typography>
-          <Typography variant="title">Olá, {profile?.name ?? "Admin"}</Typography>
+          <Typography variant="title">
+            Olá, {profile?.name ?? "Admin"}
+          </Typography>
           <Typography variant="caption">{profile?.email}</Typography>
         </View>
         <Pressable
           accessibilityLabel="Sair"
-          onPress={logout}
+          accessibilityRole="button"
+          onPress={() => {
+            Alert.alert("Sair", "Sair da conta de gestão?", [
+              { text: "Cancelar", style: "cancel" },
+              {
+                text: "Sair",
+                style: "destructive",
+                onPress: () => {
+                  void logout();
+                },
+              },
+            ]);
+          }}
           style={styles.logoutButton}
         >
           <Ionicons color={colors.primary} name="log-out-outline" size={22} />
@@ -120,20 +146,36 @@ export function AdminDashboardScreen() {
 
       <View style={styles.banner}>
         <Typography style={styles.bannerEyebrow} variant="caption">
-          OPERAÇÃO · DEMO
+          OPERAÇÃO · DEMONSTRAÇÃO
         </Typography>
         <Typography style={styles.bannerTitle} variant="subtitle">
-          Contadores a partir dos pedidos reais. Use Pedidos para avançar o
-          status na demonstração.
+          Contadores a partir dos pedidos. Use Pedidos para avançar o status na
+          demonstração.
         </Typography>
       </View>
 
       <Typography style={styles.sectionTitle} variant="subtitle">
         Resumo
       </Typography>
-      {loading ? (
-        <LoadingState label="Atualizando…" />
-      ) : (
+      {loading ? <LoadingState label="Carregando painel…" /> : null}
+      {!loading && error ? (
+        <View style={styles.errorBlock}>
+          <InlineNotice
+            description="Os números podem estar desatualizados. Verifique a conexão e tente de novo."
+            title="Não foi possível carregar o painel"
+            tone="error"
+          />
+          <Button
+            label="Tentar novamente"
+            onPress={() => {
+              setLoading(true);
+              void load();
+            }}
+            variant="outline"
+          />
+        </View>
+      ) : null}
+      {!loading && !error ? (
         <View style={styles.statsGrid}>
           {stats.map((stat) => (
             <View key={stat.label} style={styles.statCard}>
@@ -144,7 +186,7 @@ export function AdminDashboardScreen() {
             </View>
           ))}
         </View>
-      )}
+      ) : null}
 
       <Typography style={styles.sectionTitle} variant="subtitle">
         Módulos
@@ -169,8 +211,14 @@ export function AdminDashboardScreen() {
                         : styles.badgeSoon,
                     ]}
                   >
-                    <Typography style={styles.badgeLabel} variant="caption">
-                      {module.status === "live" ? "ATIVO" : "EM BREVE"}
+                    <Typography
+                      style={[
+                        styles.badgeLabel,
+                        module.status === "live" && styles.badgeLabelLive,
+                      ]}
+                      variant="caption"
+                    >
+                      {module.status === "live" ? "Disponível" : "Em breve"}
                     </Typography>
                   </View>
                 </View>
@@ -183,6 +231,7 @@ export function AdminDashboardScreen() {
             return (
               <Pressable
                 key={module.title}
+                accessibilityRole="button"
                 onPress={() => router.push(module.href!)}
                 style={styles.moduleCard}
               >
@@ -236,6 +285,10 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontWeight: "700",
     marginBottom: spacing.md,
+  },
+  errorBlock: {
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
   statsGrid: {
     flexDirection: "row",
@@ -297,7 +350,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   badgeLive: {
-    backgroundColor: colors.softAccent,
+    backgroundColor: colors.secondary,
   },
   badgeSoon: {
     backgroundColor: colors.secondary,
@@ -305,5 +358,8 @@ const styles = StyleSheet.create({
   badgeLabel: {
     color: colors.ink,
     fontWeight: "700",
+  },
+  badgeLabelLive: {
+    color: colors.success,
   },
 });

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { ColorValue, StyleSheet, View } from "react-native";
 
 import { colors } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
@@ -11,7 +11,7 @@ function CartTabIcon({
   focused,
   size,
 }: {
-  color: string;
+  color: ColorValue;
   focused: boolean;
   size: number;
 }) {

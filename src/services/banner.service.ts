@@ -20,11 +20,14 @@ function mapBanner(id: string, data: Record<string, unknown>): Banner {
   return {
     id,
     title: String(data.title ?? ""),
+    body: String(data.body ?? data.description ?? ""),
     image: String(data.image ?? ""),
     destination: {
       type: (destinationData.type as BannerDestination["type"]) ?? "category",
       id: String(destinationData.id ?? ""),
     },
+    ctaLabel: String(data.ctaLabel ?? "Ver oferta"),
+    asModal: Boolean(data.asModal),
     active: Boolean(data.active),
     order: Number(data.order ?? 0),
   };
@@ -39,6 +42,30 @@ export async function listActiveBanners(): Promise<Banner[]> {
     .sort((left, right) => left.order - right.order);
 }
 
+/** Hero grande: campanhas ativas que NÃO usam modal. */
+export async function listActiveHeroBanners(): Promise<Banner[]> {
+  const banners = await listActiveBanners();
+  return banners.filter((banner) => !banner.asModal);
+}
+
+/**
+ * Faixa de promoções na home (modal e não-modal).
+ * Todas as campanhas ativas, por ordem.
+ */
+export async function listHomePromotions(): Promise<Banner[]> {
+  return listActiveBanners();
+}
+
+/**
+ * Única promoção elegível ao modal de 1ª abertura:
+ * ativa + asModal + menor order (máxima prioridade).
+ */
+export async function getActivePromoModal(): Promise<Banner | null> {
+  const banners = await listActiveBanners();
+  const modalEligible = banners.filter((banner) => banner.asModal);
+  return modalEligible[0] ?? null;
+}
+
 export async function listAllBanners(): Promise<Banner[]> {
   const snapshot = await getDocs(collection(database, "banners"));
   return snapshot.docs
@@ -48,8 +75,11 @@ export async function listAllBanners(): Promise<Banner[]> {
 
 export type BannerInput = {
   title: string;
+  body: string;
   image: string;
   destination: BannerDestination;
+  ctaLabel: string;
+  asModal: boolean;
   active: boolean;
   order: number;
 };
@@ -58,6 +88,8 @@ export async function createBanner(input: BannerInput): Promise<Banner> {
   const payload = {
     ...input,
     title: input.title.trim(),
+    body: input.body.trim(),
+    ctaLabel: input.ctaLabel.trim() || "Ver oferta",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -72,6 +104,10 @@ export async function updateBanner(
   await updateDoc(doc(database, "banners", id), {
     ...input,
     ...(input.title ? { title: input.title.trim() } : {}),
+    ...(input.body !== undefined ? { body: input.body.trim() } : {}),
+    ...(input.ctaLabel !== undefined
+      ? { ctaLabel: input.ctaLabel.trim() || "Ver oferta" }
+      : {}),
     updatedAt: serverTimestamp(),
   });
 }

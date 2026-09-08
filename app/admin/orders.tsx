@@ -122,10 +122,10 @@ export default function AdminOrdersScreen() {
       {orders.length === 0 ? (
         <EmptyState
           actionLabel="Voltar ao painel"
-          description="Quando um cliente confirmar o pagamento mock, o pedido aparece aqui."
+          description="Quando um cliente finalizar a compra, ele aparece nesta lista."
           icon="receipt-outline"
           onAction={() => router.replace("/admin" as Href)}
-          title="Nenhum pedido ainda"
+          title="Nenhum pedido por aqui"
         />
       ) : (
         <View style={styles.list}>

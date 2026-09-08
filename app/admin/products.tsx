@@ -15,18 +15,45 @@ import {
   listAllProducts,
   updateProduct,
 } from "@/src/services/product.service";
-import { Category, Product, StockStatus } from "@/src/types/catalog";
-import { formatCurrency } from "@/src/utils/format";
+import { Category, Product, stockStatusFromQuantity } from "@/src/types/catalog";
+import { formatCurrency, stockLabel } from "@/src/utils/format";
+
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80";
+
+type FormState = {
+  name: string;
+  price: string;
+  promoPrice: string;
+  quantity: string;
+  description: string;
+  categoryId: string;
+  imageUrl: string;
+  featured: boolean;
+  promo: boolean;
+  active: boolean;
+};
+
+const emptyForm = (categoryId = ""): FormState => ({
+  name: "",
+  price: "",
+  promoPrice: "",
+  quantity: "10",
+  description: "",
+  categoryId,
+  imageUrl: DEFAULT_IMAGE,
+  featured: false,
+  promo: false,
+  active: true,
+});
 
 export default function AdminProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [description, setDescription] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm());
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -38,7 +65,10 @@ export default function AdminProductsScreen() {
       ]);
       setProducts(nextProducts);
       setCategories(nextCategories);
-      setCategoryId((current) => current || nextCategories[0]?.id || "");
+      setForm((current) => ({
+        ...current,
+        categoryId: current.categoryId || nextCategories[0]?.id || "",
+      }));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao carregar produtos.",
@@ -55,35 +85,91 @@ export default function AdminProductsScreen() {
     }, [load]),
   );
 
-  async function handleCreate() {
-    const parsedPrice = Number(price.replace(",", "."));
-    if (!name.trim() || !categoryId || Number.isNaN(parsedPrice)) {
+  function patchForm(partial: Partial<FormState>) {
+    setForm((current) => ({ ...current, ...partial }));
+  }
+
+  function startCreate() {
+    setEditingId(null);
+    setForm(emptyForm(categories[0]?.id || ""));
+  }
+
+  function startEdit(product: Product) {
+    setEditingId(product.id);
+    setForm({
+      name: product.name,
+      price: String(product.price).replace(".", ","),
+      promoPrice:
+        product.promoPrice != null
+          ? String(product.promoPrice).replace(".", ",")
+          : "",
+      quantity: String(product.stockQuantity),
+      description: product.description,
+      categoryId: product.categoryId,
+      imageUrl: product.images[0] || DEFAULT_IMAGE,
+      featured: product.featured,
+      promo: product.promo,
+      active: product.active,
+    });
+  }
+
+  async function handleSave() {
+    const parsedPrice = Number(form.price.replace(",", "."));
+    const parsedQty = Number(form.quantity.replace(",", "."));
+    const parsedPromoPrice = form.promoPrice.trim()
+      ? Number(form.promoPrice.replace(",", "."))
+      : null;
+    if (!form.name.trim() || !form.categoryId || Number.isNaN(parsedPrice)) {
       Alert.alert("Campos obrigatórios", "Informe nome, categoria e preço.");
       return;
     }
+    if (Number.isNaN(parsedQty) || parsedQty < 0) {
+      Alert.alert("Quantidade inválida", "Informe a quantidade em estoque (≥ 0).");
+      return;
+    }
+    if (
+      form.promo &&
+      (parsedPromoPrice === null ||
+        Number.isNaN(parsedPromoPrice) ||
+        parsedPromoPrice <= 0)
+    ) {
+      Alert.alert(
+        "Preço promocional",
+        "Informe um preço promocional válido maior que zero.",
+      );
+      return;
+    }
+
+    const stockQuantity = Math.floor(parsedQty);
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || "Produto da loja.",
+      categoryId: form.categoryId,
+      price: parsedPrice,
+      images: [form.imageUrl.trim() || DEFAULT_IMAGE],
+      active: form.active,
+      featured: form.featured,
+      promo: form.promo,
+      promoPrice: form.promo ? parsedPromoPrice : null,
+      stockQuantity,
+      stockStatus: stockStatusFromQuantity(stockQuantity),
+    };
+
     setSaving(true);
     try {
-      await createProduct({
-        name: name.trim(),
-        description: description.trim() || "Produto criado no admin MVP-3.",
-        categoryId,
-        price: parsedPrice,
-        images: [
-          "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800",
-        ],
-        active: true,
-        featured: false,
-        stockStatus: "in_stock" as StockStatus,
-      });
-      setName("");
-      setPrice("");
-      setDescription("");
+      if (editingId) {
+        await updateProduct(editingId, payload);
+        Alert.alert("Produto atualizado", "Alterações salvas no catálogo.");
+      } else {
+        await createProduct(payload);
+        Alert.alert("Produto criado", "Já aparece no catálogo se estiver ativo.");
+      }
+      startCreate();
       await load();
-      Alert.alert("Produto criado", "Já aparece no catálogo se estiver ativo.");
     } catch (err) {
       Alert.alert(
         "Erro",
-        err instanceof Error ? err.message : "Falha ao criar produto.",
+        err instanceof Error ? err.message : "Falha ao salvar produto.",
       );
     } finally {
       setSaving(false);
@@ -114,11 +200,11 @@ export default function AdminProductsScreen() {
     <Container scroll>
       <Typography variant="caption">ADMIN · PRODUTOS</Typography>
       <Typography style={styles.title} variant="title">
-        Criar e atualizar
+        {editingId ? "Editar produto" : "Novo produto"}
       </Typography>
       <InlineNotice
-        description="CRUD básico no Firestore. Imagem usa placeholder Unsplash."
-        title="Catálogo editável"
+        description="Ajuste preço, promoção, quantidade, destaque e foto (URL). Itens em promoção aparecem com destaque no catálogo."
+        title="Catálogo da loja"
         tone="info"
       />
 
@@ -130,31 +216,70 @@ export default function AdminProductsScreen() {
         <Input
           autoCapitalize="sentences"
           label="Nome"
-          onChangeText={setName}
-          value={name}
+          onChangeText={(name) => patchForm({ name })}
+          value={form.name}
         />
-        <Input
-          keyboardType="decimal-pad"
-          label="Preço"
-          onChangeText={setPrice}
-          value={price}
-        />
+        <View style={styles.rowFields}>
+          <View style={styles.half}>
+            <Input
+              keyboardType="decimal-pad"
+              label="Preço (R$)"
+              onChangeText={(price) => patchForm({ price })}
+              value={form.price}
+            />
+          </View>
+          <View style={styles.half}>
+            <Input
+              keyboardType="number-pad"
+              label="Quantidade"
+              onChangeText={(quantity) => patchForm({ quantity })}
+              value={form.quantity}
+            />
+          </View>
+        </View>
+        <View style={styles.switchRow}>
+          <View style={styles.switchCopy}>
+            <Typography variant="body">Em promoção</Typography>
+            <Typography variant="caption">
+              Destaca no catálogo e no filtro Promoção
+            </Typography>
+          </View>
+          <Switch
+            onValueChange={(promo) => patchForm({ promo })}
+            trackColor={{ true: colors.accent, false: colors.border }}
+            value={form.promo}
+          />
+        </View>
+        {form.promo ? (
+          <Input
+            keyboardType="decimal-pad"
+            label="Preço promocional (R$)"
+            onChangeText={(promoPrice) => patchForm({ promoPrice })}
+            value={form.promoPrice}
+          />
+        ) : null}
         <Input
           autoCapitalize="sentences"
-          label="Descrição (opcional)"
-          onChangeText={setDescription}
-          value={description}
+          label="Descrição"
+          onChangeText={(description) => patchForm({ description })}
+          value={form.description}
+        />
+        <Input
+          autoCapitalize="none"
+          label="URL da imagem"
+          onChangeText={(imageUrl) => patchForm({ imageUrl })}
+          value={form.imageUrl}
         />
         <Typography variant="caption">Categoria</Typography>
         <View style={styles.chips}>
           {categories.map((category) => {
-            const selected = categoryId === category.id;
+            const selected = form.categoryId === category.id;
             return (
               <Pressable
                 key={category.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                onPress={() => setCategoryId(category.id)}
+                onPress={() => patchForm({ categoryId: category.id })}
                 style={[styles.chip, selected && styles.chipOn]}
               >
                 <Typography
@@ -167,11 +292,36 @@ export default function AdminProductsScreen() {
             );
           })}
         </View>
+
+        <View style={styles.switchRow}>
+          <Typography variant="body">Destaque na home</Typography>
+          <Switch
+            onValueChange={(featured) => patchForm({ featured })}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            value={form.featured}
+          />
+        </View>
+        <View style={styles.switchRow}>
+          <Typography variant="body">Ativo no catálogo</Typography>
+          <Switch
+            onValueChange={(active) => patchForm({ active })}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            value={form.active}
+          />
+        </View>
+
         <Button
-          label="Criar produto"
+          label={editingId ? "Salvar alterações" : "Criar produto"}
           loading={saving}
-          onPress={() => void handleCreate()}
+          onPress={() => void handleSave()}
         />
+        {editingId ? (
+          <Button
+            label="Cancelar edição"
+            onPress={startCreate}
+            variant="outline"
+          />
+        ) : null}
       </View>
 
       <Typography style={styles.section} variant="subtitle">
@@ -186,7 +336,15 @@ export default function AdminProductsScreen() {
                   {product.name}
                 </Typography>
                 <Typography variant="caption">
-                  {formatCurrency(product.price)} ·{" "}
+                  {formatCurrency(product.price)}
+                  {product.promo && product.promoPrice != null
+                    ? ` → ${formatCurrency(product.promoPrice)}`
+                    : ""}{" "}
+                  · {product.stockQuantity} un. · {stockLabel(product.stockStatus)}
+                  {product.featured ? " · Destaque" : ""}
+                  {product.promo ? " · Promo" : ""}
+                </Typography>
+                <Typography variant="caption">
                   {product.active ? "Ativo" : "Inativo"}
                 </Typography>
               </View>
@@ -196,6 +354,11 @@ export default function AdminProductsScreen() {
                 value={product.active}
               />
             </View>
+            <Button
+              label="Editar"
+              onPress={() => startEdit(product)}
+              variant="secondary"
+            />
           </View>
         ))}
       </View>
@@ -211,6 +374,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.md,
   },
+  rowFields: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  half: {
+    flex: 1,
+  },
   chips: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -221,8 +391,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
-    minHeight: 44,
     justifyContent: "center",
+    minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -235,6 +405,17 @@ const styles = StyleSheet.create({
   },
   chipLabelOn: {
     color: colors.primary,
+  },
+  switchRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    minHeight: 44,
+  },
+  switchCopy: {
+    flex: 1,
+    gap: 2,
   },
   section: {
     fontWeight: "700",
@@ -250,6 +431,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
+    gap: spacing.sm,
     padding: spacing.md,
   },
   row: {

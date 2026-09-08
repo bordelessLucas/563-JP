@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
+import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { Input } from "@/src/components/Input";
@@ -31,6 +32,8 @@ export default function CheckoutAddressScreen() {
   const [lookingUpCep, setLookingUpCep] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [cepSuccess, setCepSuccess] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const lastLookedUpCep = useRef<string>("");
 
@@ -40,6 +43,7 @@ export default function CheckoutAddressScreen() {
       if (!user) return;
       try {
         setLoading(true);
+        setLoadError(null);
         const addresses = await listAddresses(user.uid);
         if (!active) return;
         setSavedAddresses(addresses);
@@ -53,6 +57,14 @@ export default function CheckoutAddressScreen() {
           setShowForm(true);
         } else if (addresses.length === 0) {
           setShowForm(true);
+        }
+      } catch (err) {
+        if (active) {
+          setLoadError(
+            err instanceof Error
+              ? err.message
+              : "Não foi possível carregar endereços.",
+          );
         }
       } finally {
         if (active) setLoading(false);
@@ -143,16 +155,34 @@ export default function CheckoutAddressScreen() {
   const handleContinue = async () => {
     if (!canContinue || !cart || !user) return;
     setSaving(true);
+    setSaveError(null);
     try {
       let nextAddress = address;
+      let nextSelectedId = selectedId;
+
       if (!selectedId) {
-        const created = await createAddress(user.uid, {
-          ...address,
-          cep: formatCep(address.cep),
-        });
-        nextAddress = created;
-        setSavedAddresses((current) => [...current, created]);
-        setSelectedId(created.id);
+        const match = savedAddresses.find(
+          (item) =>
+            onlyDigits(item.cep) === onlyDigits(address.cep) &&
+            item.street.trim().toLowerCase() ===
+              address.street.trim().toLowerCase() &&
+            item.number.trim() === address.number.trim(),
+        );
+
+        if (match) {
+          nextAddress = match;
+          nextSelectedId = match.id;
+          setSelectedId(match.id);
+        } else {
+          const created = await createAddress(user.uid, {
+            ...address,
+            cep: formatCep(address.cep),
+          });
+          nextAddress = created;
+          nextSelectedId = created.id;
+          setSavedAddresses((current) => [...current, created]);
+          setSelectedId(created.id);
+        }
       }
 
       await saveCheckout({
@@ -162,7 +192,7 @@ export default function CheckoutAddressScreen() {
           notes: "",
         },
         address: {
-          id: selectedId ?? nextAddress.id,
+          id: nextSelectedId ?? nextAddress.id,
           cep: formatCep(nextAddress.cep),
           street: nextAddress.street.trim(),
           number: nextAddress.number.trim(),
@@ -177,6 +207,12 @@ export default function CheckoutAddressScreen() {
         deliveryPeriodLabel: cart.checkout?.deliveryPeriodLabel ?? "",
       });
       router.push("/checkout/schedule" as Href);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível salvar o endereço. Tente de novo.",
+      );
     } finally {
       setSaving(false);
     }
@@ -192,7 +228,7 @@ export default function CheckoutAddressScreen() {
 
   return (
     <Container keyboardAware scroll>
-      <Typography variant="caption">ETAPA 2 DE 5</Typography>
+      <CheckoutStepper step={2} />
       <Typography style={styles.title} variant="title">
         Onde entregar?
       </Typography>
@@ -201,6 +237,13 @@ export default function CheckoutAddressScreen() {
         title="Endereço de entrega"
         tone="info"
       />
+
+      {loadError ? (
+        <InlineNotice description={loadError} title="Erro ao carregar" tone="error" />
+      ) : null}
+      {saveError ? (
+        <InlineNotice description={saveError} title="Erro ao salvar" tone="error" />
+      ) : null}
 
       {savedAddresses.length > 0 ? (
         <View style={styles.savedList}>
@@ -221,7 +264,8 @@ export default function CheckoutAddressScreen() {
               </Pressable>
             );
           })}
-          <Pressable
+          <Button
+            label="Novo endereço"
             onPress={() => {
               setSelectedId(null);
               setAddress(createEmptyAddress());
@@ -230,11 +274,8 @@ export default function CheckoutAddressScreen() {
               setCepSuccess(null);
               lastLookedUpCep.current = "";
             }}
-          >
-            <Typography style={styles.link} variant="caption">
-              + Cadastrar novo endereço
-            </Typography>
-          </Pressable>
+            variant="secondary"
+          />
         </View>
       ) : null}
 

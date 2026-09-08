@@ -77,6 +77,26 @@ export default function AdminLayout() {
           ),
         }}
       />
+      <Stack.Screen
+        name="promotions"
+        options={{
+          title: "Promoções",
+          headerLeft: () => (
+            <Pressable
+              hitSlop={8}
+              onPress={() => router.back()}
+              style={{ paddingHorizontal: 8, minHeight: 44, justifyContent: "center" }}
+            >
+              <Typography
+                style={{ color: colors.primary, fontWeight: "700" }}
+                variant="caption"
+              >
+                Voltar
+              </Typography>
+            </Pressable>
+          ),
+        }}
+      />
     </Stack>
   );
 }

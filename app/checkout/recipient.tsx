@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
+import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { Input } from "@/src/components/Input";
@@ -13,12 +14,20 @@ import {
   createEmptyRecipient,
   RecipientDraft,
 } from "@/src/types/checkout";
+import {
+  formatPhoneMask,
+  isValidRecipientPhone,
+} from "@/src/utils/checkout";
 
 export default function CheckoutRecipientScreen() {
   const router = useRouter();
   const { cart, saveCheckout } = useCart();
-  const [recipient, setRecipient] = useState<RecipientDraft>(createEmptyRecipient());
+  const [recipient, setRecipient] = useState<RecipientDraft>(
+    createEmptyRecipient(),
+  );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [touchedPhone, setTouchedPhone] = useState(false);
 
   useEffect(() => {
     if (cart?.checkout?.recipient) {
@@ -26,14 +35,23 @@ export default function CheckoutRecipientScreen() {
     }
   }, [cart?.checkout?.recipient]);
 
+  const phoneError =
+    touchedPhone && recipient.phone.trim().length > 0 && !isValidRecipientPhone(recipient.phone)
+      ? "Informe um telefone com DDD (10 ou 11 dígitos)."
+      : undefined;
+
   const canContinue = useMemo(
-    () => recipient.name.trim().length > 1 && recipient.phone.trim().length >= 8,
+    () =>
+      recipient.name.trim().length > 1 &&
+      isValidRecipientPhone(recipient.phone),
     [recipient.name, recipient.phone],
   );
 
   const handleContinue = async () => {
+    setTouchedPhone(true);
     if (!canContinue || !cart) return;
     setSaving(true);
+    setError(null);
     try {
       await saveCheckout({
         recipient: {
@@ -47,6 +65,12 @@ export default function CheckoutRecipientScreen() {
         deliveryPeriodLabel: cart.checkout?.deliveryPeriodLabel ?? "",
       });
       router.push("/checkout/address" as Href);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível salvar o destinatário. Tente de novo.",
+      );
     } finally {
       setSaving(false);
     }
@@ -54,7 +78,7 @@ export default function CheckoutRecipientScreen() {
 
   return (
     <Container keyboardAware scroll>
-      <Typography variant="caption">ETAPA 1 DE 5</Typography>
+      <CheckoutStepper step={1} />
       <Typography style={styles.title} variant="title">
         Para quem vamos entregar?
       </Typography>
@@ -64,25 +88,40 @@ export default function CheckoutRecipientScreen() {
         tone="info"
       />
 
+      {error ? (
+        <InlineNotice description={error} title="Erro ao salvar" tone="error" />
+      ) : null}
+
       <View style={styles.form}>
         <Input
           autoCapitalize="words"
           label="Nome do destinatário"
-          onChangeText={(name) => setRecipient((current) => ({ ...current, name }))}
+          onChangeText={(name) =>
+            setRecipient((current) => ({ ...current, name }))
+          }
           placeholder="Nome completo"
           value={recipient.name}
         />
         <Input
+          error={phoneError}
           keyboardType="phone-pad"
           label="Telefone"
-          onChangeText={(phone) => setRecipient((current) => ({ ...current, phone }))}
+          onBlur={() => setTouchedPhone(true)}
+          onChangeText={(phone) =>
+            setRecipient((current) => ({
+              ...current,
+              phone: formatPhoneMask(phone),
+            }))
+          }
           placeholder="(11) 99999-9999"
           value={recipient.phone}
         />
         <Input
           autoCapitalize="sentences"
           label="Observações (opcional)"
-          onChangeText={(notes) => setRecipient((current) => ({ ...current, notes }))}
+          onChangeText={(notes) =>
+            setRecipient((current) => ({ ...current, notes }))
+          }
           placeholder="Ex.: entregar na portaria"
           value={recipient.notes}
         />

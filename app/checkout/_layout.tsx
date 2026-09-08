@@ -4,6 +4,12 @@ import { Pressable } from "react-native";
 import { colors } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import {
+  checkoutRecoveryHref,
+  hasAddress,
+  hasRecipient,
+  hasSchedule,
+} from "@/src/utils/checkout";
 
 export default function CheckoutLayout() {
   const router = useRouter();
@@ -14,6 +20,31 @@ export default function CheckoutLayout() {
 
   if (!loading && (!cart || cart.items.length === 0) && !allowEmptyCart) {
     return <Redirect href={"/(tabs)/cart" as Href} />;
+  }
+
+  if (!loading && cart && cart.items.length > 0) {
+    const checkout = cart.checkout;
+    if (
+      (route === "address" ||
+        route === "schedule" ||
+        route === "summary" ||
+        route === "payment") &&
+      !hasRecipient(checkout)
+    ) {
+      return <Redirect href={"/checkout/recipient" as Href} />;
+    }
+    if (
+      (route === "schedule" || route === "summary" || route === "payment") &&
+      !hasAddress(checkout)
+    ) {
+      return <Redirect href={"/checkout/address" as Href} />;
+    }
+    if (
+      (route === "summary" || route === "payment") &&
+      !hasSchedule(checkout)
+    ) {
+      return <Redirect href={checkoutRecoveryHref(checkout) as Href} />;
+    }
   }
 
   return (
@@ -30,7 +61,10 @@ export default function CheckoutLayout() {
             onPress={() => router.back()}
             style={{ paddingHorizontal: 8 }}
           >
-            <Typography style={{ color: colors.primary, fontWeight: "700" }} variant="caption">
+            <Typography
+              style={{ color: colors.primary, fontWeight: "700" }}
+              variant="caption"
+            >
               Voltar
             </Typography>
           </Pressable>

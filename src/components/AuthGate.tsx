@@ -1,19 +1,28 @@
-import { Redirect, Slot, useSegments } from "expo-router";
+import { Redirect, useSegments } from "expo-router";
+import { PropsWithChildren } from "react";
+import { StyleSheet, View } from "react-native";
 
+import { LoadingState } from "@/src/components/LoadingState";
+import { colors } from "@/src/components/theme";
 import { useAuth } from "@/src/contexts/AuthContext";
 
-const publicRoutes = new Set(["login", "register", "forgot-password"]);
+const publicRoutes = new Set(["login", "register", "forgot-password", "index"]);
 
-export function AuthGate() {
+export function AuthGate({ children }: PropsWithChildren) {
   const { isAuthenticated, isAdmin, loading, homeRoute } = useAuth();
   const segments = useSegments();
   const route = typeof segments[0] === "string" ? segments[0] : "";
   const isPublicRoute = publicRoutes.has(route);
   const isAdminRoute = route === "admin";
-  // Typed routes may lag behind new folders (e.g. order/[id]).
   const isSharedRoute = String(route) === "order";
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <LoadingState label="Preparando sua conta…" />
+      </View>
+    );
+  }
   if (!isAuthenticated && !isPublicRoute) return <Redirect href="/login" />;
   if (isAuthenticated && isPublicRoute) return <Redirect href={homeRoute} />;
   if (isAuthenticated && isAdminRoute && !isAdmin) {
@@ -28,5 +37,13 @@ export function AuthGate() {
   ) {
     return <Redirect href="/admin" />;
   }
-  return <Slot />;
+  return children;
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    backgroundColor: colors.canvas,
+    flex: 1,
+    justifyContent: "center",
+  },
+});

@@ -50,6 +50,12 @@ Entregar um fluxo de compra **demonstrável** com foco ~65% UI/UX e ~35% backend
 - [x] Rules + index `customerId + createdAt` para vínculo cliente ↔ pedido.
 - [x] Checkout em 5 etapas; pass UI/UX (empty/loading/erro, toque ≥44, navegação admin/cliente).
 
+### Pós-MVP-3 — Validação e polish *(2026-09-08)*
+
+- [x] Checklist `validacao_mvp.md` para smoke no APK/Expo.
+- [x] P0: anti-duplicata de pedido; gate de checkout incompleto; erros de save no checkout.
+- [x] P1: mensagens do carrinho; editar no resumo; telefone; endereços; copy mock; timeline com “Pronto para entrega”; AuthGate/forgot-password.
+
 ## Dados no Firebase (projeto `jp-6a9d2`)
 
 | Coleção | Status |
@@ -72,6 +78,7 @@ Gateway real, webhook, API de entrega, push, admin CRUD completo (banners/config
 | Doc | Papel |
 |-----|--------|
 | `STATUS.md` | Contexto do que está aplicado **hoje** |
+| `validacao_mvp.md` | Checklist de validação/polish pós-MVP-3 |
 | `mvp3_plan.md` | Detalhe técnico do MVP-3 |
 | `checklist_sprints.md` | Backlog completo Sprints 0–8 |
 | `escopo.md` | Requisitos de produto |

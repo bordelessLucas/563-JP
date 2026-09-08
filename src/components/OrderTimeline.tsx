@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
+import { InlineNotice } from "@/src/components/InlineNotice";
 import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { CLIENT_TIMELINE_STEPS } from "@/src/utils/orderLabels";
@@ -10,6 +11,30 @@ type OrderTimelineProps = {
 };
 
 export function OrderTimeline({ orderStatus }: OrderTimelineProps) {
+  if (orderStatus === "cancelled") {
+    return (
+      <InlineNotice
+        description="Este pedido foi cancelado. Os passos de entrega não se aplicam."
+        title="Pedido cancelado"
+        tone="warning"
+      />
+    );
+  }
+
+  const onTimeline = CLIENT_TIMELINE_STEPS.some((step) =>
+    (step.match as readonly string[]).includes(orderStatus),
+  );
+
+  if (!onTimeline) {
+    return (
+      <InlineNotice
+        description="Assim que o pagamento for confirmado, a timeline de entrega aparece aqui."
+        title="Aguardando confirmação"
+        tone="info"
+      />
+    );
+  }
+
   return (
     <View style={styles.list}>
       {CLIENT_TIMELINE_STEPS.map((step, index) => {
@@ -17,9 +42,9 @@ export function OrderTimeline({ orderStatus }: OrderTimelineProps) {
         const isCurrent =
           done &&
           (index === CLIENT_TIMELINE_STEPS.length - 1 ||
-            !(CLIENT_TIMELINE_STEPS[index + 1].match as readonly string[]).includes(
-              orderStatus,
-            ));
+            !(
+              CLIENT_TIMELINE_STEPS[index + 1].match as readonly string[]
+            ).includes(orderStatus));
 
         return (
           <View key={step.key} style={styles.row}>

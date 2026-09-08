@@ -1,4 +1,11 @@
-import { Href, Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  Href,
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -32,6 +39,15 @@ export default function OrderDetailScreen() {
   const hasLoadedRef = useRef(false);
 
   const ordersHome = (isAdmin ? "/admin/orders" : "/(tabs)/orders") as Href;
+  const shopHome = (isAdmin ? "/admin" : "/(tabs)") as Href;
+
+  const leaveToOrders = useCallback(() => {
+    router.replace(ordersHome);
+  }, [ordersHome, router]);
+
+  const leaveToHome = useCallback(() => {
+    router.replace(shopHome);
+  }, [router, shopHome]);
 
   const load = useCallback(
     async (soft = false) => {
@@ -62,31 +78,23 @@ export default function OrderDetailScreen() {
     }, [load]),
   );
 
-  function goBack() {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace(ordersHome);
-  }
-
   return (
     <>
       <Stack.Screen
         options={{
           title: order?.orderNumber ?? "Pedido",
+          headerBackVisible: false,
           headerLeft: () => (
             <Pressable
+              accessibilityLabel="Voltar aos pedidos"
               accessibilityRole="button"
               hitSlop={8}
-              onPress={goBack}
-              style={{ paddingHorizontal: 8, minHeight: 44, justifyContent: "center" }}
+              onPress={leaveToOrders}
+              style={styles.headerBack}
             >
-              <Typography
-                style={{ color: colors.primary, fontWeight: "700" }}
-                variant="caption"
-              >
-                Voltar
+              <Ionicons color={colors.primary} name="chevron-back" size={22} />
+              <Typography style={styles.headerBackLabel} variant="caption">
+                Pedidos
               </Typography>
             </Pressable>
           ),
@@ -108,7 +116,12 @@ export default function OrderDetailScreen() {
             />
             <Button
               label={isAdmin ? "Voltar aos pedidos admin" : "Voltar aos pedidos"}
-              onPress={() => router.replace(ordersHome)}
+              onPress={leaveToOrders}
+            />
+            <Button
+              label={isAdmin ? "Ir ao painel" : "Ir à home"}
+              onPress={leaveToHome}
+              variant="outline"
             />
           </View>
         ) : null}
@@ -214,11 +227,22 @@ export default function OrderDetailScreen() {
               </View>
             </View>
 
-            <Button
-              label="Atualizar"
-              onPress={() => void load(true)}
-              variant="outline"
-            />
+            <View style={styles.actions}>
+              <Button
+                label="Atualizar status"
+                onPress={() => void load(true)}
+                variant="outline"
+              />
+              <Button
+                label={isAdmin ? "Voltar aos pedidos admin" : "Voltar aos pedidos"}
+                onPress={leaveToOrders}
+              />
+              <Button
+                label={isAdmin ? "Ir ao painel" : "Continuar comprando"}
+                onPress={leaveToHome}
+                variant="secondary"
+              />
+            </View>
           </View>
         ) : null}
       </Container>
@@ -227,6 +251,17 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerBack: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 2,
+    minHeight: 44,
+    paddingRight: spacing.sm,
+  },
+  headerBackLabel: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
   content: {
     gap: spacing.lg,
     paddingBottom: spacing.xl,
@@ -269,5 +304,8 @@ const styles = StyleSheet.create({
   total: {
     color: colors.primary,
     fontWeight: "700",
+  },
+  actions: {
+    gap: spacing.md,
   },
 });
