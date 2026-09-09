@@ -11,8 +11,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return signedIn() && (
+        request.auth.token.admin == true
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     match /users/{userId} {
@@ -42,7 +44,21 @@ service cloud.firestore {
     }
 
     match /carts/{userId} {
-      allow read, create, update, delete: if isOwner(userId) || isAdmin();
+      // Owner may write cart, but cannot invent/alter server deliveryQuote fee.
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+      allow update: if (isOwner(userId) || isAdmin())
+        && cartDeliveryQuoteProtected();
+    }
+
+    function cartDeliveryQuoteProtected() {
+      let oldQuote = resource.data.get('checkout', {}).get('deliveryQuote', null);
+      let newCheckout = request.resource.data.get('checkout', null);
+      // Clearing checkout is allowed; changing an existing server quote is not.
+      return oldQuote == null
+        || newCheckout == null
+        || newCheckout.get('deliveryQuote', null) == oldQuote;
     }
 
     match /addresses/{addressId} {
@@ -57,30 +73,29 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Orders: client/admin SDK cannot mutate. All writes via Cloud Functions (Admin SDK).
     match /orders/{orderId} {
-      allow create: if signedIn()
-        && request.resource.data.customerId == request.auth.uid
-        && request.resource.data.keys().hasAll([
-          'orderNumber', 'customerId', 'items', 'recipient',
-          'deliveryAddress', 'deliveryDate', 'subtotal', 'total',
-          'paymentMethod', 'paymentStatus', 'orderStatus', 'deliveryStatus'
-        ]);
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
       allow read: if isAdmin()
         || (signedIn() && resource.data.customerId == request.auth.uid);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
     }
 
     match /payments/{paymentId} {
       allow read: if isAdmin() || (signedIn()
         && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.customerId == request.auth.uid);
-      allow write: if isAdmin();
+      allow write: if false;
     }
 
     match /deliveries/{deliveryId} {
       allow read: if isAdmin() || (signedIn()
         && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.customerId == request.auth.uid);
-      allow write: if isAdmin();
+      allow write: if false;
+    }
+
+    match /webhookEvents/{eventId} {
+      allow read, write: if false;
     }
   }
 }

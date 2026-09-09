@@ -9,24 +9,27 @@ import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
-import { useAuth } from "@/src/contexts/AuthContext";
 import {
-  advanceOrderStatus,
-  listAllOrders,
-  nextOrderStatus,
-} from "@/src/services/order.service";
+  markOrderPreparing,
+  markOrderReady,
+  reconcileDelivery,
+  requestDelivery,
+  retryDelivery,
+} from "@/src/services/backend.service";
+import { listAllOrders } from "@/src/services/order.service";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
 import {
+  deliveryStatusLabel,
   formatDateLabel,
   formatDateTimeLabel,
   orderStatusLabel,
   paymentMethodLabel,
+  paymentStatusLabel,
 } from "@/src/utils/orderLabels";
 
 export default function AdminOrdersScreen() {
   const router = useRouter();
-  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,33 +58,19 @@ export default function AdminOrdersScreen() {
     }, [load]),
   );
 
-  function confirmAdvance(order: Order) {
-    const next = nextOrderStatus(order.orderStatus);
-    if (!next || !user) return;
-
-    Alert.alert(
-      "Avançar status",
-      `De “${orderStatusLabel(order.orderStatus)}” para “${orderStatusLabel(next)}”?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: () => void runAdvance(order.id, next),
-        },
-      ],
-    );
-  }
-
-  async function runAdvance(orderId: string, next: NonNullable<ReturnType<typeof nextOrderStatus>>) {
-    if (!user) return;
+  async function runBackend(
+    orderId: string,
+    action: () => Promise<unknown>,
+    label: string,
+  ) {
     setBusyId(orderId);
     try {
-      await advanceOrderStatus(orderId, next, user.uid);
+      await action();
       await load();
     } catch (err) {
       Alert.alert(
-        "Erro",
-        err instanceof Error ? err.message : "Não foi possível atualizar.",
+        label,
+        err instanceof Error ? err.message : "Falha na operação.",
       );
     } finally {
       setBusyId(null);
@@ -107,11 +96,11 @@ export default function AdminOrdersScreen() {
     >
       <Typography variant="caption">ADMIN · PEDIDOS</Typography>
       <Typography style={styles.title} variant="title">
-        Operação da demo
+        Operação
       </Typography>
       <InlineNotice
-        description="Avance o status manualmente para a timeline do cliente. Sem GPS e sem API de entrega."
-        title="Controle mock de logística"
+        description="Somente callables do backend alteram status. Pagamento aprovado não cria Uber: preparar → pronto → solicitar entrega."
+        title="Pagamento e entrega desacoplados"
         tone="info"
       />
 
@@ -130,7 +119,13 @@ export default function AdminOrdersScreen() {
       ) : (
         <View style={styles.list}>
           {orders.map((order) => {
-            const next = nextOrderStatus(order.orderStatus);
+            const busy = busyId === order.id;
+            const canRequest =
+              (order.orderStatus === "ready_for_pickup" ||
+                order.orderStatus === "ready_for_delivery") &&
+              (order.deliveryCreationState === "not_started" ||
+                order.deliveryCreationState === "failed" ||
+                !order.deliveryCreationState);
             return (
               <View key={order.id} style={styles.card}>
                 <View style={styles.header}>
@@ -147,11 +142,33 @@ export default function AdminOrdersScreen() {
                   Cliente: {order.customerName || order.customerEmail}
                 </Typography>
                 <Typography variant="caption">
-                  {formatDateTimeLabel(order.createdAt)} ·{" "}
+                  Pagamento: {paymentStatusLabel(order.paymentStatus)} ·{" "}
                   {paymentMethodLabel(order.paymentMethod)}
+                  {order.payment?.provider
+                    ? ` · ${order.payment.provider}`
+                    : ""}
                 </Typography>
                 <Typography variant="caption">
-                  Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
+                  Entrega: {deliveryStatusLabel(order.deliveryStatus)}
+                  {order.delivery?.externalDeliveryId
+                    ? ` · ${order.delivery.externalDeliveryId}`
+                    : ""}
+                </Typography>
+                {order.deliveryCreationState ? (
+                  <Typography variant="caption">
+                    Criação Uber: {order.deliveryCreationState}
+                  </Typography>
+                ) : null}
+                {order.delivery?.lastError ? (
+                  <InlineNotice
+                    description={order.delivery.lastError}
+                    title="Erro operacional"
+                    tone="error"
+                  />
+                ) : null}
+                <Typography variant="caption">
+                  {formatDateTimeLabel(order.createdAt)} · Entrega{" "}
+                  {formatDateLabel(order.deliveryDate)} ·{" "}
                   {order.deliveryPeriodLabel}
                 </Typography>
                 <Typography style={styles.total} variant="body">
@@ -165,17 +182,77 @@ export default function AdminOrdersScreen() {
                     Ver detalhe →
                   </Typography>
                 </Pressable>
-                {next ? (
+
+                {order.orderStatus === "paid" ? (
                   <Button
-                    label={`Avançar → ${orderStatusLabel(next)}`}
-                    loading={busyId === order.id}
-                    onPress={() => confirmAdvance(order)}
+                    label="Marcar preparando"
+                    loading={busy}
+                    onPress={() =>
+                      void runBackend(
+                        order.id,
+                        () => markOrderPreparing(order.id),
+                        "Preparar",
+                      )
+                    }
+                    variant="outline"
                   />
-                ) : (
-                  <Typography variant="caption">
-                    Fluxo concluído ou fora da sequência demo.
-                  </Typography>
-                )}
+                ) : null}
+                {order.orderStatus === "preparing" ? (
+                  <Button
+                    label="Marcar pronto para coleta"
+                    loading={busy}
+                    onPress={() =>
+                      void runBackend(
+                        order.id,
+                        () => markOrderReady(order.id),
+                        "Pronto",
+                      )
+                    }
+                    variant="outline"
+                  />
+                ) : null}
+                {canRequest ? (
+                  <Button
+                    label="Solicitar Uber Direct"
+                    loading={busy}
+                    onPress={() =>
+                      void runBackend(
+                        order.id,
+                        () => requestDelivery(order.id),
+                        "Solicitar entrega",
+                      )
+                    }
+                  />
+                ) : null}
+                {order.deliveryCreationState === "failed" ? (
+                  <Button
+                    label="Retry entrega"
+                    loading={busy}
+                    onPress={() =>
+                      void runBackend(
+                        order.id,
+                        () => retryDelivery(order.id),
+                        "Retry",
+                      )
+                    }
+                    variant="outline"
+                  />
+                ) : null}
+                {order.deliveryCreationState === "uncertain" ||
+                order.delivery?.externalDeliveryId ? (
+                  <Button
+                    label="Reconciliar entrega"
+                    loading={busy}
+                    onPress={() =>
+                      void runBackend(
+                        order.id,
+                        () => reconcileDelivery(order.id),
+                        "Reconciliar",
+                      )
+                    }
+                    variant="secondary"
+                  />
+                ) : null}
               </View>
             );
           })}

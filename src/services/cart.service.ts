@@ -32,6 +32,8 @@ export function calculateCartTotals(
   items: CartItem[],
   deliveryFee: number,
 ): Pick<Cart, "subtotal" | "deliveryFee" | "total"> {
+  // UI-only estimates. Authoritative checkout totals come from Cloud Functions
+  // (PricingService + DeliveryService quote). Never use these for charging.
   const subtotal = items.reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
@@ -91,10 +93,16 @@ export async function getCart(userId: string): Promise<Cart> {
     return emptyCart(userId, settings.deliveryFee);
   }
 
-  const mapped = mapCart(userId, snapshot.data() as Record<string, unknown>);
+  const data = snapshot.data() as Record<string, unknown>;
+  const mapped = mapCart(userId, data);
+  const quoteFeeCents = mapped.checkout?.deliveryQuote?.feeCents;
+  const fee =
+    typeof quoteFeeCents === "number"
+      ? quoteFeeCents / 100
+      : Number(data.deliveryFee ?? settings.deliveryFee);
   return {
     ...mapped,
-    ...calculateCartTotals(mapped.items, settings.deliveryFee),
+    ...calculateCartTotals(mapped.items, fee),
   };
 }
 
@@ -181,7 +189,21 @@ export async function saveCheckoutDraft(
   checkout: CheckoutDraft,
 ): Promise<Cart> {
   const cart = await getCart(userId);
-  return persistCart({ ...cart, checkout });
+  // deliveryQuote is owned by Cloud Functions (createDeliveryQuote). Never trust
+  // client-supplied feeCents — preserve the server quote already on the cart.
+  const safeCheckout: CheckoutDraft = {
+    ...checkout,
+    deliveryQuote: cart.checkout?.deliveryQuote ?? undefined,
+  };
+  const fee =
+    typeof safeCheckout.deliveryQuote?.feeCents === "number"
+      ? safeCheckout.deliveryQuote.feeCents / 100
+      : cart.deliveryFee;
+  return persistCart({
+    ...cart,
+    checkout: safeCheckout,
+    deliveryFee: fee,
+  });
 }
 
 export async function clearCart(userId: string): Promise<void> {

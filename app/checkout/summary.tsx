@@ -1,13 +1,16 @@
 import { Href, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
+import { LoadingState } from "@/src/components/LoadingState";
 import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { createDeliveryQuote } from "@/src/services/backend.service";
 import { formatCurrency } from "@/src/utils/format";
 
 function formatDateLabel(value: string): string {
@@ -18,10 +21,14 @@ function formatDateLabel(value: string): string {
 
 export default function CheckoutSummaryScreen() {
   const router = useRouter();
-  const { cart } = useCart();
+  const { cart, refreshCart, saveCheckout } = useCart();
   const checkout = cart?.checkout;
   const address = checkout?.address;
   const recipient = checkout?.recipient;
+
+  const [quoting, setQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteNotice, setQuoteNotice] = useState<string | null>(null);
 
   const incomplete =
     !cart ||
@@ -30,6 +37,60 @@ export default function CheckoutSummaryScreen() {
     !address?.street ||
     !checkout?.deliveryDate ||
     !checkout.deliveryPeriodLabel;
+
+  useEffect(() => {
+    if (incomplete || !address || !checkout || !recipient) return;
+
+    let active = true;
+    const run = async () => {
+      setQuoting(true);
+      setQuoteError(null);
+      try {
+        const previousFee = cart.deliveryFee;
+        const { quote } = await createDeliveryQuote({
+          address,
+          persistToCart: true,
+        });
+        if (!active) return;
+
+        await saveCheckout({
+          ...checkout,
+          deliveryQuote: quote,
+        });
+        await refreshCart();
+
+        const nextFee = quote.feeCents / 100;
+        if (Math.abs(previousFee - nextFee) > 0.001) {
+          setQuoteNotice(
+            `Frete atualizado para ${formatCurrency(nextFee)}.`,
+          );
+        }
+      } catch (err) {
+        if (!active) return;
+        setQuoteError(
+          err instanceof Error
+            ? err.message
+            : "Não foi possível cotar a entrega.",
+        );
+      } finally {
+        if (active) setQuoting(false);
+      }
+    };
+
+    void run();
+    return () => {
+      active = false;
+    };
+    // Only re-quote when address/schedule identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    incomplete,
+    address?.cep,
+    address?.street,
+    address?.number,
+    checkout?.deliveryDate,
+    checkout?.deliveryPeriodId,
+  ]);
 
   return (
     <Container scroll>
@@ -47,11 +108,27 @@ export default function CheckoutSummaryScreen() {
           />
         ) : (
           <InlineNotice
-            description="Na próxima etapa você escolhe PIX ou cartão. Nenhum valor real é cobrado nesta demo."
+            description="Na próxima etapa você escolhe PIX ou cartão. O frete vem da cotação do backend."
             title="Tudo certo para pagar"
             tone="success"
           />
         )}
+
+        {quoting ? <LoadingState label="Cotando entrega…" /> : null}
+        {quoteError ? (
+          <InlineNotice
+            description={quoteError}
+            title="Cotação indisponível"
+            tone="error"
+          />
+        ) : null}
+        {quoteNotice ? (
+          <InlineNotice
+            description={quoteNotice}
+            title="Frete atualizado"
+            tone="info"
+          />
+        ) : null}
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -165,9 +242,7 @@ export default function CheckoutSummaryScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="caption">
-              Entrega (ilustrativa nesta versão)
-            </Typography>
+            <Typography variant="caption">Entrega</Typography>
             <Typography variant="body">
               {formatCurrency(cart?.deliveryFee ?? 0)}
             </Typography>
@@ -184,7 +259,7 @@ export default function CheckoutSummaryScreen() {
 
         <View style={styles.actions}>
           <Button
-            disabled={incomplete}
+            disabled={incomplete || quoting || Boolean(quoteError)}
             label="Ir para pagamento"
             onPress={() => router.push("/checkout/payment" as Href)}
           />

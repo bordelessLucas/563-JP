@@ -25,12 +25,22 @@ export type DeliveryAddressDraft = {
   reference: string;
 };
 
+export type DeliveryQuoteDraft = {
+  provider: string;
+  quoteId: string;
+  feeCents: number;
+  currency: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 export type CheckoutDraft = {
   recipient: RecipientDraft;
   address: DeliveryAddressDraft | null;
   deliveryDate: string;
   deliveryPeriodId: string;
   deliveryPeriodLabel: string;
+  deliveryQuote?: DeliveryQuoteDraft | null;
 };
 
 export function createEmptyRecipient(): RecipientDraft {

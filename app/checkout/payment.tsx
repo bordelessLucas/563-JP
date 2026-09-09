@@ -2,6 +2,7 @@ import * as Clipboard from "expo-clipboard";
 import { Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { FirebaseError } from "firebase/app";
 
 import { Button } from "@/src/components/Button";
 import { CheckoutStepper } from "@/src/components/CheckoutStepper";
@@ -13,7 +14,10 @@ import { colors, radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
-import { createOrderFromCart } from "@/src/services/order.service";
+import {
+  createCheckout,
+  simulateMockPayment,
+} from "@/src/services/backend.service";
 import { PaymentMethod } from "@/src/types/order";
 import {
   checkoutRecoveryHref,
@@ -24,13 +28,13 @@ import { formatCurrency } from "@/src/utils/format";
 type PaymentPhase = "choose" | "awaiting" | "failed";
 
 const MOCK_PIX_CODE =
-  "00020126580014BR.GOV.BCB.PIX0136123e4567-e12b-12d1-a456-42661417400052040000530398654041.005802BR5925JP FLORES DEMO MVP6009SAO PAULO62070503***6304ABCD";
+  "00020126580014BR.GOV.BCB.PIX0136MOCK-PAYMENT-DEMO5204000053039865802BR5925JP FLORES DEMO MVP6009SAO PAULO62070503***6304ABCD";
 
 export default function CheckoutPaymentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ method?: string }>();
   const { user, profile } = useAuth();
-  const { cart, emptyCart } = useCart();
+  const { cart, refreshCart } = useCart();
 
   const initialMethod: PaymentMethod =
     params.method === "card" ? "card" : "pix";
@@ -39,6 +43,8 @@ export default function CheckoutPaymentScreen() {
   const [phase, setPhase] = useState<PaymentPhase>("choose");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pixCode, setPixCode] = useState(MOCK_PIX_CODE);
+  const [quoteNotice, setQuoteNotice] = useState<string | null>(null);
 
   const totalLabel = useMemo(
     () => formatCurrency(cart?.total ?? 0),
@@ -49,7 +55,7 @@ export default function CheckoutPaymentScreen() {
   const readyToPay = isCartReadyForPayment(cart);
 
   async function copyPix() {
-    await Clipboard.setStringAsync(MOCK_PIX_CODE);
+    await Clipboard.setStringAsync(pixCode);
     Alert.alert("Copiado", "Código de exemplo copiado.");
   }
 
@@ -61,7 +67,7 @@ export default function CheckoutPaymentScreen() {
 
   async function simulateApprove() {
     if (!user || !cart || cart.items.length === 0) return;
-    if (!readyToPay) {
+    if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
       setError("Complete destinatário, endereço e agenda antes de pagar.");
       router.replace(checkoutRecoveryHref(cart.checkout) as Href);
       return;
@@ -69,44 +75,75 @@ export default function CheckoutPaymentScreen() {
 
     setBusy(true);
     setError(null);
+    setQuoteNotice(null);
     setPhase("awaiting");
 
     let createdOrderId: string | null = null;
     let createdOrderNumber: string | null = null;
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      const order = await createOrderFromCart({
-        customerId: user.uid,
+      const checkout = await createCheckout({
         customerName: profile?.name ?? user.displayName ?? "Cliente",
         customerEmail: profile?.email ?? user.email ?? "",
-        cart,
         paymentMethod: method,
+        recipient: {
+          name: cart.checkout.recipient.name,
+          phone: cart.checkout.recipient.phone,
+          notes: cart.checkout.recipient.notes,
+        },
+        address: cart.checkout.address,
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          message: item.message,
+        })),
+        deliveryDate: cart.checkout.deliveryDate ?? "",
+        deliveryPeriodId: cart.checkout.deliveryPeriodId ?? "",
+        deliveryPeriodLabel: cart.checkout.deliveryPeriodLabel ?? "",
+        existingQuote: cart.checkout.deliveryQuote ?? undefined,
       });
-      createdOrderId = order.id;
-      createdOrderNumber = order.orderNumber;
 
-      try {
-        await emptyCart();
-      } catch {
-        // Pedido já existe — não falhar a UI nem permitir retry que duplica.
-        try {
-          await emptyCart();
-        } catch {
-          /* ignore second clear failure */
-        }
+      createdOrderId = checkout.orderId;
+      createdOrderNumber = checkout.orderNumber;
+      if (checkout.paymentSession.pixCopyPaste) {
+        setPixCode(checkout.paymentSession.pixCopyPaste);
+      }
+      if (checkout.quoteRefreshed) {
+        setQuoteNotice(
+          `Frete recalculado: ${formatCurrency(checkout.deliveryFee)}. Total ${formatCurrency(checkout.total)}.`,
+        );
       }
 
-      await goToSuccess(order.id, order.orderNumber);
+      const payment = await simulateMockPayment({
+        orderId: checkout.orderId,
+        outcome: "approved",
+      });
+
+      if (payment.paymentStatus !== "approved") {
+        throw new Error("Pagamento não aprovado.");
+      }
+
+      try {
+        await refreshCart();
+      } catch {
+        /* cart already cleared by backend */
+      }
+
+      await goToSuccess(checkout.orderId, checkout.orderNumber);
     } catch (err) {
       if (createdOrderId && createdOrderNumber) {
+        // Order exists — send user to success/tracking even if simulation flaked mid-way.
         await goToSuccess(createdOrderId, createdOrderNumber);
         return;
       }
       setPhase("failed");
-      setError(
-        err instanceof Error ? err.message : "Não foi possível criar o pedido.",
-      );
+      const message =
+        err instanceof FirebaseError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Não foi possível criar o pedido.";
+      setError(message);
     } finally {
       setBusy(false);
     }
@@ -122,6 +159,7 @@ export default function CheckoutPaymentScreen() {
   function resetFlow() {
     setPhase("choose");
     setError(null);
+    setQuoteNotice(null);
   }
 
   if (!hasItems && phase !== "awaiting") {
@@ -162,10 +200,18 @@ export default function CheckoutPaymentScreen() {
           Pagamento
         </Typography>
         <InlineNotice
-          description="PIX e cartão são só para você ver o fluxo. Ao confirmar, o pedido é registrado para acompanhamento."
-          title="Nenhuma cobrança nesta versão"
+          description="O valor é recalculado no servidor. PIX/cartão usam MockPaymentProvider até o gateway real."
+          title="Pagamento via backend"
           tone="info"
         />
+
+        {quoteNotice ? (
+          <InlineNotice
+            description={quoteNotice}
+            title="Frete atualizado"
+            tone="warning"
+          />
+        ) : null}
 
         <View style={styles.totalCard}>
           <Typography variant="caption">Total do pedido</Typography>
@@ -241,7 +287,7 @@ export default function CheckoutPaymentScreen() {
                   </Typography>
                 </View>
                 <Typography selectable style={styles.pixCode} variant="caption">
-                  {MOCK_PIX_CODE}
+                  {pixCode}
                 </Typography>
                 <Button
                   label="Copiar código PIX"

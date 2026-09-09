@@ -19,20 +19,39 @@ export function formatDateTimeLabel(iso?: string): string {
 
 export function orderStatusLabel(status: string): string {
   switch (status) {
+    case "draft":
+    case "awaiting_delivery_quote":
+      return "Montando pedido";
+    case "awaiting_payment":
     case "pending_payment":
       return "Aguardando pagamento";
     case "paid":
-      return "Confirmado";
+      return "Pedido confirmado";
     case "preparing":
-      return "Preparando";
+      return "Preparando flores";
+    case "ready_for_pickup":
     case "ready_for_delivery":
-      return "Pronto para entrega";
+      return "Pronto para coleta";
+    case "delivery_requested":
+      return "Buscando entregador";
+    case "courier_assigned":
+      return "Entregador a caminho da floricultura";
+    case "picked_up":
+      return "Pedido coletado";
     case "out_for_delivery":
-      return "Saiu para entrega";
+      return "Seu pedido está a caminho";
     case "delivered":
-      return "Entregue";
+      return "Pedido entregue";
+    case "cancellation_pending":
+      return "Cancelamento em andamento";
     case "cancelled":
-      return "Cancelado";
+      return "Pedido cancelado";
+    case "return_in_progress":
+      return "Devolução em andamento";
+    case "returned":
+      return "Pedido devolvido";
+    case "exception":
+      return "Precisamos revisar seu pedido";
     default:
       return status;
   }
@@ -41,11 +60,20 @@ export function orderStatusLabel(status: string): string {
 export function paymentStatusLabel(status: string): string {
   switch (status) {
     case "pending_payment":
+    case "pending":
+    case "not_started":
       return "Pendente";
     case "paid":
+    case "approved":
       return "Pago";
     case "failed":
       return "Falhou";
+    case "cancelled":
+      return "Cancelado";
+    case "refund_pending":
+      return "Estorno pendente";
+    case "refunded":
+      return "Estornado";
     default:
       return status;
   }
@@ -58,21 +86,25 @@ export function paymentMethodLabel(method: string): string {
 export function deliveryStatusLabel(status: string): string {
   switch (status) {
     case "not_started":
-      return "Não iniciada";
+      return "Entrega ainda não solicitada";
     case "delivery_requested":
-      return "Solicitada";
+      return "Buscando entregador";
     case "driver_assigned":
-      return "Entregador definido";
+    case "courier_assigned":
+      return "Entregador encontrado";
     case "picked_up":
-      return "Coletado";
+      return "Pedido coletado";
     case "in_transit":
-      return "Em trânsito";
+    case "out_for_delivery":
+      return "Saiu para entrega";
     case "delivered":
       return "Entregue";
     case "failed":
-      return "Falha";
+      return "Falha na entrega";
     case "cancelled":
-      return "Cancelada";
+      return "Entrega cancelada";
+    case "returned":
+      return "Devolvido";
     default:
       return status;
   }
@@ -82,29 +114,71 @@ export function deliveryStatusLabel(status: string): string {
 export const CLIENT_TIMELINE_STEPS = [
   {
     key: "paid",
-    label: "Confirmado",
+    label: "Pedido confirmado",
     match: [
       "paid",
       "preparing",
+      "ready_for_pickup",
       "ready_for_delivery",
+      "delivery_requested",
+      "courier_assigned",
+      "picked_up",
       "out_for_delivery",
       "delivered",
     ],
   },
   {
     key: "preparing",
-    label: "Preparando",
-    match: ["preparing", "ready_for_delivery", "out_for_delivery", "delivered"],
+    label: "Preparando flores",
+    match: [
+      "preparing",
+      "ready_for_pickup",
+      "ready_for_delivery",
+      "delivery_requested",
+      "courier_assigned",
+      "picked_up",
+      "out_for_delivery",
+      "delivered",
+    ],
   },
   {
     key: "ready_for_delivery",
-    label: "Pronto para entrega",
-    match: ["ready_for_delivery", "out_for_delivery", "delivered"],
+    label: "Pronto para coleta",
+    match: [
+      "ready_for_pickup",
+      "ready_for_delivery",
+      "delivery_requested",
+      "courier_assigned",
+      "picked_up",
+      "out_for_delivery",
+      "delivered",
+    ],
+  },
+  {
+    key: "delivery_requested",
+    label: "Buscando entregador",
+    match: [
+      "delivery_requested",
+      "courier_assigned",
+      "picked_up",
+      "out_for_delivery",
+      "delivered",
+    ],
+  },
+  {
+    key: "courier_assigned",
+    label: "Entregador a caminho da floricultura",
+    match: ["courier_assigned", "picked_up", "out_for_delivery", "delivered"],
+  },
+  {
+    key: "picked_up",
+    label: "Pedido coletado",
+    match: ["picked_up", "out_for_delivery", "delivered"],
   },
   {
     key: "out_for_delivery",
     label: "Saiu para entrega",
     match: ["out_for_delivery", "delivered"],
   },
-  { key: "delivered", label: "Entregue", match: ["delivered"] },
+  { key: "delivered", label: "Pedido entregue", match: ["delivered"] },
 ] as const;

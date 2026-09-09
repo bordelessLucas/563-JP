@@ -154,6 +154,19 @@ export default function OrderDetailScreen() {
                 Timeline da entrega
               </Typography>
               <OrderTimeline orderStatus={order.orderStatus} />
+              {order.delivery?.trackingUrl ? (
+                <Typography variant="caption">
+                  Rastreio: {order.delivery.trackingUrl}
+                </Typography>
+              ) : null}
+              {order.delivery?.courier?.name ? (
+                <Typography variant="caption">
+                  Entregador: {order.delivery.courier.name}
+                  {order.delivery.courier.phone
+                    ? ` · ${order.delivery.courier.phone}`
+                    : ""}
+                </Typography>
+              ) : null}
               <Typography variant="caption">
                 Puxe para atualizar após o admin avançar o status.
               </Typography>

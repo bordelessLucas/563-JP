@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "functions:build": "npm --prefix functions run build",
+    "functions:test": "npm --prefix functions run test",
+    "typecheck": "tsc --noEmit && npm --prefix functions run build",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -32,6 +36,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
     "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3"
   },

@@ -41,6 +41,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [tokenAdmin, setTokenAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(
@@ -49,14 +50,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setUser(nextUser);
         if (!nextUser) {
           setProfile(null);
+          setTokenAdmin(false);
           setLoading(false);
           return;
         }
 
         setLoading(true);
-        void getUserProfile(nextUser.uid)
-          .then((nextProfile) => {
+        void Promise.all([
+          getUserProfile(nextUser.uid),
+          nextUser.getIdTokenResult().then((result) => result.claims.admin === true),
+        ])
+          .then(([nextProfile, adminClaim]) => {
             setProfile(nextProfile);
+            setTokenAdmin(adminClaim);
           })
           .finally(() => {
             setLoading(false);
@@ -66,7 +72,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   const role = profile?.role ?? null;
-  const isAdmin = role === "admin";
+  // Prefer Auth custom claim; Firestore role remains fallback until token refresh.
+  const isAdmin = tokenAdmin || role === "admin";
   const homeRoute = isAdmin ? "/admin" : "/(tabs)";
 
   const value = useMemo<AuthContextValue>(
@@ -80,9 +87,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       homeRoute,
       login: async (email, password) => {
         const credential = await signInWithEmail(email, password);
-        const nextProfile = await getUserProfile(credential.user.uid);
+        await credential.user.getIdToken(true);
+        const [nextProfile, token] = await Promise.all([
+          getUserProfile(credential.user.uid),
+          credential.user.getIdTokenResult(),
+        ]);
         setUser(credential.user);
         setProfile(nextProfile);
+        setTokenAdmin(token.claims.admin === true);
       },
       register: async (name, email, password) => {
         const credential = await registerWithEmail(name, email, password);
@@ -90,6 +102,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const nextProfile = await getUserProfile(credential.user.uid);
         setUser(credential.user);
         setProfile(nextProfile);
+        setTokenAdmin(false);
       },
       logout,
       requestPasswordReset,

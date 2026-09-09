@@ -100,6 +100,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       },
       saveCheckout: async (checkout) => {
         if (!user) return;
+        // Strips/ignores client deliveryQuote.feeCents inside saveCheckoutDraft.
         const nextCart = await saveCheckoutDraft(user.uid, checkout);
         setCart(nextCart);
       },
