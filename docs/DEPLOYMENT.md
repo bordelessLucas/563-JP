@@ -2,6 +2,11 @@
 
 **Não execute deploy até revisar secrets e `APP_ENV`.**
 
+Guias operacionais para o próximo agente:
+
+- Mock (Blaze + Functions sem Uber/gateway): [`DEPLOY_MOCK.md`](./DEPLOY_MOCK.md)
+- Real / produção: [`DEPLOY_REAL.md`](./DEPLOY_REAL.md)
+
 Esta página descreve a sequência; não contém valores reais.
 
 ## Pré-requisitos
