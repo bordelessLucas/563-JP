@@ -44,21 +44,32 @@ service cloud.firestore {
     }
 
     match /carts/{userId} {
-      // Owner may write cart, but cannot invent/alter server deliveryQuote fee.
+      // Owner may write cart, but cannot invent/alter server deliveryQuote.
+      // Quotes are written only by Cloud Functions (Admin SDK).
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
+      allow create: if (isOwner(userId) || isAdmin())
+        && cartCreateWithoutQuote();
       allow delete: if isOwner(userId) || isAdmin();
       allow update: if (isOwner(userId) || isAdmin())
         && cartDeliveryQuoteProtected();
     }
 
+    // Client create must not seed a forged deliveryQuote.
+    function cartCreateWithoutQuote() {
+      let checkout = request.resource.data.get('checkout', null);
+      return checkout == null
+        || checkout.get('deliveryQuote', null) == null;
+    }
+
+    // Client may clear quote or keep the existing server quote unchanged.
+    // Inventing a quote when none exists (or changing fee) is denied.
     function cartDeliveryQuoteProtected() {
       let oldQuote = resource.data.get('checkout', {}).get('deliveryQuote', null);
       let newCheckout = request.resource.data.get('checkout', null);
-      // Clearing checkout is allowed; changing an existing server quote is not.
-      return oldQuote == null
-        || newCheckout == null
-        || newCheckout.get('deliveryQuote', null) == oldQuote;
+      let newQuote = newCheckout == null
+        ? null
+        : newCheckout.get('deliveryQuote', null);
+      return newQuote == null || newQuote == oldQuote;
     }
 
     match /addresses/{addressId} {

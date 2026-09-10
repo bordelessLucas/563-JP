@@ -110,7 +110,9 @@ export function CartScreen() {
 
   return (
     <Container onRefresh={onRefresh} refreshing={loading && items.length > 0} scroll>
-      <Typography variant="caption">CARRINHO</Typography>
+      <Typography style={styles.eyebrow} variant="caption">
+        Carrinho
+      </Typography>
       <Typography style={styles.title} variant="title">
         Seu pedido
       </Typography>
@@ -132,8 +134,8 @@ export function CartScreen() {
       {items.length > 0 ? (
         <View style={styles.content}>
           <InlineNotice
-            description="Inclua uma mensagem por item se quiser. Seus dados ficam salvos entre as etapas."
-            title="Personalize antes de continuar"
+            description="Inclua uma mensagem por item, se quiser. Seus dados ficam salvos entre as etapas."
+            title="Personalize seu pedido"
             tone="info"
           />
 
@@ -258,7 +260,8 @@ export function CartScreen() {
                 </Typography>
               </View>
               <Typography style={styles.feeHint} variant="caption">
-                Valor ilustrativo nesta versão — não é cobrança real.
+                Estimativa só para referência. O frete cobrado é cotado no
+                resumo/pagamento pelo servidor — não use este valor como cobrança.
               </Typography>
             </View>
             <View style={styles.summaryRow}>
@@ -285,6 +288,12 @@ export function CartScreen() {
 }
 
 const styles = StyleSheet.create({
+  eyebrow: {
+    color: colors.primary,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
   title: {
     marginBottom: spacing.lg,
   },
@@ -301,15 +310,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.md,
     overflow: "hidden",
-    padding: spacing.sm,
+    padding: spacing.md,
   },
   image: {
     backgroundColor: colors.secondary,
     borderRadius: radius.md,
-    height: 96,
-    width: 96,
+    height: 92,
+    width: 92,
   },
   imageFallback: {
     backgroundColor: colors.softAccent,
@@ -331,8 +340,10 @@ const styles = StyleSheet.create({
   },
   qtyButton: {
     alignItems: "center",
-    backgroundColor: colors.secondary,
-    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
     height: 44,
     justifyContent: "center",
     width: 44,

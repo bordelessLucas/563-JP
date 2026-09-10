@@ -120,12 +120,22 @@ export default function AdminOrdersScreen() {
         <View style={styles.list}>
           {orders.map((order) => {
             const busy = busyId === order.id;
+            const paymentOk =
+              order.paymentStatus === "paid" ||
+              order.payment?.status === "approved";
+            const readyForPickup =
+              order.orderStatus === "ready_for_pickup" ||
+              order.orderStatus === "ready_for_delivery";
+            const creationState = order.deliveryCreationState ?? "not_started";
             const canRequest =
-              (order.orderStatus === "ready_for_pickup" ||
-                order.orderStatus === "ready_for_delivery") &&
-              (order.deliveryCreationState === "not_started" ||
-                order.deliveryCreationState === "failed" ||
-                !order.deliveryCreationState);
+              paymentOk &&
+              readyForPickup &&
+              creationState === "not_started";
+            const canRetry =
+              paymentOk && readyForPickup && creationState === "failed";
+            const canReconcile =
+              creationState === "uncertain" ||
+              Boolean(order.delivery?.externalDeliveryId);
             return (
               <View key={order.id} style={styles.card}>
                 <View style={styles.header}>
@@ -156,7 +166,7 @@ export default function AdminOrdersScreen() {
                 </Typography>
                 {order.deliveryCreationState ? (
                   <Typography variant="caption">
-                    Criação Uber: {order.deliveryCreationState}
+                    Criação entrega: {order.deliveryCreationState}
                   </Typography>
                 ) : null}
                 {order.delivery?.lastError ? (
@@ -183,7 +193,7 @@ export default function AdminOrdersScreen() {
                   </Typography>
                 </Pressable>
 
-                {order.orderStatus === "paid" ? (
+                {order.orderStatus === "paid" && paymentOk ? (
                   <Button
                     label="Marcar preparando"
                     loading={busy}
@@ -197,7 +207,7 @@ export default function AdminOrdersScreen() {
                     variant="outline"
                   />
                 ) : null}
-                {order.orderStatus === "preparing" ? (
+                {order.orderStatus === "preparing" && paymentOk ? (
                   <Button
                     label="Marcar pronto para coleta"
                     loading={busy}
@@ -213,7 +223,7 @@ export default function AdminOrdersScreen() {
                 ) : null}
                 {canRequest ? (
                   <Button
-                    label="Solicitar Uber Direct"
+                    label="Solicitar entrega"
                     loading={busy}
                     onPress={() =>
                       void runBackend(
@@ -224,7 +234,7 @@ export default function AdminOrdersScreen() {
                     }
                   />
                 ) : null}
-                {order.deliveryCreationState === "failed" ? (
+                {canRetry ? (
                   <Button
                     label="Retry entrega"
                     loading={busy}
@@ -238,8 +248,7 @@ export default function AdminOrdersScreen() {
                     variant="outline"
                   />
                 ) : null}
-                {order.deliveryCreationState === "uncertain" ||
-                order.delivery?.externalDeliveryId ? (
+                {canReconcile ? (
                   <Button
                     label="Reconciliar entrega"
                     loading={busy}

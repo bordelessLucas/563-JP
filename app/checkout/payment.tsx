@@ -45,10 +45,12 @@ export default function CheckoutPaymentScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pixCode, setPixCode] = useState(MOCK_PIX_CODE);
   const [quoteNotice, setQuoteNotice] = useState<string | null>(null);
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const totalLabel = useMemo(
-    () => formatCurrency(cart?.total ?? 0),
-    [cart?.total],
+    () => formatCurrency(serverTotal ?? cart?.total ?? 0),
+    [cart?.total, serverTotal],
   );
 
   const hasItems = Boolean(cart && cart.items.length > 0);
@@ -65,6 +67,49 @@ export default function CheckoutPaymentScreen() {
     );
   }
 
+  async function runCheckout() {
+    if (!user || !cart || cart.items.length === 0) {
+      throw new Error("Carrinho vazio.");
+    }
+    if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
+      throw new Error("Complete destinatário, endereço e agenda antes de pagar.");
+    }
+
+    const checkout = await createCheckout({
+      customerName: profile?.name ?? user.displayName ?? "Cliente",
+      customerEmail: profile?.email ?? user.email ?? "",
+      paymentMethod: method,
+      recipient: {
+        name: cart.checkout.recipient.name,
+        phone: cart.checkout.recipient.phone,
+        notes: cart.checkout.recipient.notes,
+      },
+      address: cart.checkout.address,
+      items: cart.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        message: item.message,
+      })),
+      deliveryDate: cart.checkout.deliveryDate ?? "",
+      deliveryPeriodId: cart.checkout.deliveryPeriodId ?? "",
+      deliveryPeriodLabel: cart.checkout.deliveryPeriodLabel ?? "",
+      existingQuote: cart.checkout.deliveryQuote ?? undefined,
+    });
+
+    setPendingOrderId(checkout.orderId);
+    setServerTotal(checkout.total);
+    if (checkout.paymentSession.pixCopyPaste) {
+      setPixCode(checkout.paymentSession.pixCopyPaste);
+    }
+    if (checkout.quoteRefreshed) {
+      setQuoteNotice(
+        `Frete recalculado: ${formatCurrency(checkout.deliveryFee)}. Total ${formatCurrency(checkout.total)}.`,
+      );
+    }
+
+    return checkout;
+  }
+
   async function simulateApprove() {
     if (!user || !cart || cart.items.length === 0) return;
     if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
@@ -78,41 +123,8 @@ export default function CheckoutPaymentScreen() {
     setQuoteNotice(null);
     setPhase("awaiting");
 
-    let createdOrderId: string | null = null;
-    let createdOrderNumber: string | null = null;
-
     try {
-      const checkout = await createCheckout({
-        customerName: profile?.name ?? user.displayName ?? "Cliente",
-        customerEmail: profile?.email ?? user.email ?? "",
-        paymentMethod: method,
-        recipient: {
-          name: cart.checkout.recipient.name,
-          phone: cart.checkout.recipient.phone,
-          notes: cart.checkout.recipient.notes,
-        },
-        address: cart.checkout.address,
-        items: cart.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          message: item.message,
-        })),
-        deliveryDate: cart.checkout.deliveryDate ?? "",
-        deliveryPeriodId: cart.checkout.deliveryPeriodId ?? "",
-        deliveryPeriodLabel: cart.checkout.deliveryPeriodLabel ?? "",
-        existingQuote: cart.checkout.deliveryQuote ?? undefined,
-      });
-
-      createdOrderId = checkout.orderId;
-      createdOrderNumber = checkout.orderNumber;
-      if (checkout.paymentSession.pixCopyPaste) {
-        setPixCode(checkout.paymentSession.pixCopyPaste);
-      }
-      if (checkout.quoteRefreshed) {
-        setQuoteNotice(
-          `Frete recalculado: ${formatCurrency(checkout.deliveryFee)}. Total ${formatCurrency(checkout.total)}.`,
-        );
-      }
+      const checkout = await runCheckout();
 
       const payment = await simulateMockPayment({
         orderId: checkout.orderId,
@@ -131,29 +143,60 @@ export default function CheckoutPaymentScreen() {
 
       await goToSuccess(checkout.orderId, checkout.orderNumber);
     } catch (err) {
-      if (createdOrderId && createdOrderNumber) {
-        // Order exists — send user to success/tracking even if simulation flaked mid-way.
-        await goToSuccess(createdOrderId, createdOrderNumber);
-        return;
-      }
+      // Never treat awaiting_payment as success — that lied to the buyer.
       setPhase("failed");
       const message =
         err instanceof FirebaseError
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Não foi possível criar o pedido.";
-      setError(message);
+            : "Não foi possível confirmar o pagamento.";
+      setError(
+        `${message} Se um pedido foi criado, ele permanece aguardando pagamento — não considere pago.`,
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  function simulateFail() {
-    setPhase("failed");
-    setError(
-      "Não foi possível confirmar. Nada foi cobrado. Você pode tentar de novo.",
-    );
+  async function simulateFail() {
+    if (!user || !cart || cart.items.length === 0) return;
+    if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
+      setError("Complete destinatário, endereço e agenda antes de pagar.");
+      router.replace(checkoutRecoveryHref(cart.checkout) as Href);
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    setQuoteNotice(null);
+    setPhase("awaiting");
+
+    try {
+      const checkout = await runCheckout();
+      const payment = await simulateMockPayment({
+        orderId: checkout.orderId,
+        outcome: "failed",
+      });
+
+      setPhase("failed");
+      setError(
+        payment.paymentStatus === "failed"
+          ? "Pagamento recusado (simulação). Nada foi cobrado. Você pode tentar de novo."
+          : "Não foi possível confirmar. Nada foi cobrado. Você pode tentar de novo.",
+      );
+    } catch (err) {
+      setPhase("failed");
+      const message =
+        err instanceof FirebaseError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Falha ao simular pagamento.";
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function resetFlow() {
@@ -200,8 +243,8 @@ export default function CheckoutPaymentScreen() {
           Pagamento
         </Typography>
         <InlineNotice
-          description="O valor é recalculado no servidor. PIX/cartão usam MockPaymentProvider até o gateway real."
-          title="Pagamento via backend"
+          description="O valor final é confirmado no servidor. PIX e cartão nesta versão são apenas demonstração."
+          title="Pagamento seguro"
           tone="info"
         />
 
@@ -213,8 +256,12 @@ export default function CheckoutPaymentScreen() {
           />
         ) : null}
 
-        <View style={styles.totalCard}>
-          <Typography variant="caption">Total do pedido</Typography>
+            <View style={styles.totalCard}>
+          <Typography variant="caption">
+            {serverTotal != null
+              ? "Total confirmado pelo servidor"
+              : "Total estimado (confirmado no pagamento)"}
+          </Typography>
           <Typography style={styles.totalValue} variant="title">
             {totalLabel}
           </Typography>
@@ -312,11 +359,19 @@ export default function CheckoutPaymentScreen() {
               </View>
             )}
 
-            {error ? (
+        {error ? (
               <InlineNotice
                 description={error}
                 title="Falha no pagamento"
                 tone="error"
+              />
+            ) : null}
+
+            {pendingOrderId && phase === "failed" ? (
+              <InlineNotice
+                description="Um pedido pode ter sido criado em aguardando pagamento. Não avance a entrega até o pagamento ser aprovado."
+                title="Pedido pendente"
+                tone="warning"
               />
             ) : null}
 
@@ -328,7 +383,8 @@ export default function CheckoutPaymentScreen() {
               />
               <Button
                 label="Testar falha de pagamento"
-                onPress={simulateFail}
+                loading={busy}
+                onPress={() => void simulateFail()}
                 variant="outline"
               />
             </View>

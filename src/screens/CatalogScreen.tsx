@@ -119,12 +119,14 @@ export function CatalogScreen() {
 
   return (
     <Container onRefresh={() => void load(true)} refreshing={refreshing} scroll>
-      <Typography variant="caption">CATÁLOGO</Typography>
+      <Typography style={styles.eyebrow} variant="caption">
+        Catálogo
+      </Typography>
       <Typography style={styles.title} variant="title">
         Encontre o presente certo
       </Typography>
       <Typography style={styles.subtitle} variant="caption">
-        Filtre por promoção ou categoria. Puxe para atualizar.
+        Filtre por promoção ou categoria.
       </Typography>
 
       <View style={styles.filtersShell}>
@@ -262,6 +264,12 @@ export function CatalogScreen() {
 }
 
 const styles = StyleSheet.create({
+  eyebrow: {
+    color: colors.primary,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
   title: {
     marginBottom: spacing.xs,
   },
@@ -283,10 +291,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radius.xl,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexShrink: 0,
-    height: 44,
+    height: 40,
     justifyContent: "center",
     paddingHorizontal: spacing.md,
   },
@@ -296,7 +304,7 @@ const styles = StyleSheet.create({
   },
   chipPromo: {
     backgroundColor: colors.softAccent,
-    borderColor: colors.border,
+    borderColor: colors.softAccent,
   },
   chipPromoActive: {
     backgroundColor: colors.accent,
@@ -304,7 +312,8 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     color: colors.ink,
-    fontWeight: "700",
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
   chipPromoLabel: {
     color: colors.accent,

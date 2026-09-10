@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { ColorValue, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors } from "@/src/components/theme";
+import { colors, fontFamilyMedium } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
 
@@ -36,6 +37,8 @@ function CartTabIcon({
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -44,14 +47,16 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         tabBarHideOnKeyboard: true,
         tabBarLabelStyle: {
+          fontFamily: fontFamilyMedium,
           fontSize: 11,
-          fontWeight: "600",
+          fontWeight: "500",
+          letterSpacing: 0.2,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 62,
-          paddingBottom: 8,
+          height: 56 + Math.max(insets.bottom, 8),
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 6,
         },
       }}
@@ -59,7 +64,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Início",
           tabBarIcon: ({ color, focused, size }) => (
             <Ionicons
               color={color}
@@ -138,6 +143,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 10,
     fontWeight: "700",
+    letterSpacing: 0,
     lineHeight: 12,
   },
 });

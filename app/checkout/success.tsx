@@ -30,6 +30,15 @@ export default function CheckoutSuccessScreen() {
       ? decodeURIComponent(orderNumber)
       : "—");
 
+  const paymentApproved =
+    order?.paymentStatus === "paid" ||
+    order?.payment?.status === "approved";
+  const paymentPending =
+    order?.paymentStatus === "pending_payment" ||
+    order?.paymentStatus === "failed" ||
+    order?.orderStatus === "awaiting_payment" ||
+    order?.orderStatus === "pending_payment";
+
   useEffect(() => {
     if (!orderId) {
       setLoading(false);
@@ -43,16 +52,32 @@ export default function CheckoutSuccessScreen() {
   return (
     <Container scroll>
       <View style={styles.content}>
-        <Typography variant="caption">PEDIDO CRIADO</Typography>
-        <Typography style={styles.title} variant="title">
-          Pagamento aprovado
+        <Typography variant="caption">
+          {paymentPending && !paymentApproved ? "PEDIDO REGISTRADO" : "PEDIDO CRIADO"}
         </Typography>
-        <InlineNotice
-          description="Seu pedido foi gravado. Acompanhe o status na aba Pedidos — a entrega avança de forma simulada pelo admin."
-          title="Tudo certo"
-          tone="success"
-        />
-
+        <Typography style={styles.title} variant="title">
+          {loading
+            ? "Confirmando…"
+            : paymentApproved
+              ? "Pagamento aprovado"
+              : paymentPending
+                ? "Pagamento ainda pendente"
+                : "Pedido registrado"}
+        </Typography>
+        {paymentApproved || (!order && !loading) ? (
+          <InlineNotice
+            description="Seu pedido foi gravado. Acompanhe o status na aba Pedidos — a entrega só avança depois que a floricultura preparar e solicitar a coleta."
+            title="Tudo certo"
+            tone="success"
+          />
+        ) : null}
+        {!loading && order && paymentPending && !paymentApproved ? (
+          <InlineNotice
+            description="O pedido existe, mas o pagamento não foi confirmado. Não considere a compra concluída até o status ficar como pago."
+            title="Atenção"
+            tone="warning"
+          />
+        ) : null}
         <View style={styles.card}>
           <Typography variant="caption">Número do pedido</Typography>
           <Typography style={styles.number} variant="subtitle">

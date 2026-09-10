@@ -13,21 +13,25 @@ type InlineNoticeProps = {
 const toneStyles = {
   info: {
     background: colors.secondary,
+    border: colors.border,
     icon: "information-circle-outline" as const,
     iconColor: colors.primary,
   },
   success: {
-    background: "#E7F4EE",
+    background: colors.successSoft,
+    border: "#C9E6D7",
     icon: "checkmark-circle-outline" as const,
     iconColor: colors.success,
   },
   warning: {
-    background: "#F8F0DE",
+    background: colors.warningSoft,
+    border: "#EBD9B0",
     icon: "alert-circle-outline" as const,
     iconColor: colors.warning,
   },
   error: {
-    background: "#F8E8EA",
+    background: colors.errorSoft,
+    border: "#E8C4C8",
     icon: "close-circle-outline" as const,
     iconColor: colors.error,
   },
@@ -41,13 +45,23 @@ export function InlineNotice({
   const palette = toneStyles[tone];
 
   return (
-    <View style={[styles.card, { backgroundColor: palette.background }]}>
-      <Ionicons color={palette.iconColor} name={palette.icon} size={22} />
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: palette.background,
+          borderColor: palette.border,
+        },
+      ]}
+    >
+      <Ionicons color={palette.iconColor} name={palette.icon} size={20} />
       <View style={styles.copy}>
         <Typography style={styles.title} variant="body">
           {title}
         </Typography>
-        <Typography variant="caption">{description}</Typography>
+        <Typography style={styles.description} variant="caption">
+          {description}
+        </Typography>
       </View>
     </View>
   );
@@ -55,16 +69,24 @@ export function InlineNotice({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   copy: {
     flex: 1,
     gap: 2,
   },
   title: {
+    fontSize: 14,
     fontWeight: "700",
+    letterSpacing: 0,
+  },
+  description: {
+    letterSpacing: 0.1,
+    lineHeight: 17,
   },
 });

@@ -55,7 +55,9 @@ export function OrdersScreen() {
   if (loading && orders.length === 0 && !error) {
     return (
       <Container>
-        <Typography variant="caption">PEDIDOS</Typography>
+        <Typography style={styles.eyebrow} variant="caption">
+          Pedidos
+        </Typography>
         <Typography style={styles.title} variant="title">
           Acompanhe suas compras
         </Typography>
@@ -73,7 +75,9 @@ export function OrdersScreen() {
         void load();
       }}
     >
-      <Typography variant="caption">PEDIDOS</Typography>
+      <Typography style={styles.eyebrow} variant="caption">
+        Pedidos
+      </Typography>
       <Typography style={styles.title} variant="title">
         Acompanhe suas compras
       </Typography>
@@ -187,6 +191,12 @@ export function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  eyebrow: {
+    color: colors.primary,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
   title: {
     marginBottom: spacing.lg,
   },
@@ -217,16 +227,16 @@ const styles = StyleSheet.create({
   },
   thumb: {
     backgroundColor: colors.secondary,
-    borderRadius: radius.sm,
-    height: 56,
-    width: 56,
+    borderRadius: radius.md,
+    height: 72,
+    width: 72,
   },
   thumbFallback: {
     backgroundColor: colors.softAccent,
   },
   cardBody: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 4,
   },
   cardHeader: {
     alignItems: "center",
@@ -237,6 +247,7 @@ const styles = StyleSheet.create({
   orderNumber: {
     flex: 1,
     fontWeight: "700",
+    letterSpacing: 0,
   },
   badge: {
     backgroundColor: colors.secondary,
@@ -247,10 +258,11 @@ const styles = StyleSheet.create({
   badgeLabel: {
     color: colors.primary,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   total: {
     color: colors.primary,
     fontWeight: "700",
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
 });

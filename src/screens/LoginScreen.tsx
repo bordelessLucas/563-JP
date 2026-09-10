@@ -37,13 +37,13 @@ export function LoginScreen() {
           <Ionicons color={colors.white} name="flower-outline" size={28} />
         </View>
         <Typography style={styles.eyebrow} variant="caption">
-          FLORA & PRESENTES
+          Flora & Presentes
         </Typography>
         <Typography variant="display">
           Flores que dizem o que você sente.
         </Typography>
-        <Typography style={styles.intro} variant="subtitle">
-          Entre para encontrar o presente certo para cada momento.
+        <Typography style={styles.intro} variant="body">
+          Entre para escolher o arranjo certo para cada momento.
         </Typography>
 
         <View style={styles.form}>
@@ -122,18 +122,20 @@ const styles = StyleSheet.create({
   brandMark: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     height: 56,
     justifyContent: "center",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
     width: 56,
   },
   eyebrow: {
     color: colors.primary,
     fontWeight: "700",
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
   },
   intro: {
+    color: colors.muted,
     marginBottom: spacing.lg,
   },
   form: {

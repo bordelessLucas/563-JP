@@ -1,6 +1,11 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 
-import { colors, fontFamily, radius, spacing } from "@/src/components/theme";
+import {
+  colors,
+  fontFamilyBold,
+  radius,
+  spacing,
+} from "@/src/components/theme";
 
 type ButtonVariant = "primary" | "secondary" | "outline";
 
@@ -61,31 +66,32 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: radius.md,
     justifyContent: "center",
-    minHeight: 54,
+    minHeight: 52,
     paddingHorizontal: spacing.lg,
   },
   secondary: {
     backgroundColor: colors.secondary,
   },
   outline: {
-    backgroundColor: "transparent",
-    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   pressed: {
-    transform: [{ scale: 0.98 }],
+    opacity: 0.92,
   },
   primaryPressed: {
     backgroundColor: colors.primaryPressed,
   },
   label: {
     color: colors.white,
-    fontFamily,
-    fontSize: 16,
+    fontFamily: fontFamilyBold,
+    fontSize: 15,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   secondaryLabel: {
     color: colors.primary,

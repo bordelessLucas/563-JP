@@ -29,6 +29,7 @@ export default function CheckoutSummaryScreen() {
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteNotice, setQuoteNotice] = useState<string | null>(null);
+  const [quoteNonce, setQuoteNonce] = useState(0);
 
   const incomplete =
     !cart ||
@@ -53,6 +54,7 @@ export default function CheckoutSummaryScreen() {
         });
         if (!active) return;
 
+        // Preserve server quote already written by the callable; draft save strips client fees.
         await saveCheckout({
           ...checkout,
           deliveryQuote: quote,
@@ -81,7 +83,7 @@ export default function CheckoutSummaryScreen() {
     return () => {
       active = false;
     };
-    // Only re-quote when address/schedule identity changes.
+    // Only re-quote when address/schedule identity changes or user retries.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     incomplete,
@@ -90,6 +92,7 @@ export default function CheckoutSummaryScreen() {
     address?.number,
     checkout?.deliveryDate,
     checkout?.deliveryPeriodId,
+    quoteNonce,
   ]);
 
   return (
@@ -116,11 +119,18 @@ export default function CheckoutSummaryScreen() {
 
         {quoting ? <LoadingState label="Cotando entrega…" /> : null}
         {quoteError ? (
-          <InlineNotice
-            description={quoteError}
-            title="Cotação indisponível"
-            tone="error"
-          />
+          <View style={styles.quoteErrorBlock}>
+            <InlineNotice
+              description={quoteError}
+              title="Cotação indisponível"
+              tone="error"
+            />
+            <Button
+              label="Tentar cotar de novo"
+              onPress={() => setQuoteNonce((n) => n + 1)}
+              variant="outline"
+            />
+          </View>
         ) : null}
         {quoteNotice ? (
           <InlineNotice
@@ -242,7 +252,7 @@ export default function CheckoutSummaryScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="caption">Entrega</Typography>
+            <Typography variant="caption">Entrega (cotada)</Typography>
             <Typography variant="body">
               {formatCurrency(cart?.deliveryFee ?? 0)}
             </Typography>
@@ -281,6 +291,9 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 0,
+  },
+  quoteErrorBlock: {
+    gap: spacing.md,
   },
   card: {
     backgroundColor: colors.surface,

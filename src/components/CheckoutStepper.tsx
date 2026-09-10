@@ -44,7 +44,7 @@ export function CheckoutStepper({ step }: CheckoutStepperProps) {
         })}
       </View>
       <Typography style={styles.label} variant="caption">
-        Etapa {step} de 5 · {STEP_LABELS[step - 1]}
+        {STEP_LABELS[step - 1]} · {step} de 5
       </Typography>
     </View>
   );
@@ -53,7 +53,7 @@ export function CheckoutStepper({ step }: CheckoutStepperProps) {
 const styles = StyleSheet.create({
   wrap: {
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   row: {
     alignItems: "center",
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   line: {
     backgroundColor: colors.border,
     flex: 1,
-    height: 2,
+    height: 1,
     marginRight: 4,
   },
   lineDone: {
@@ -81,9 +81,9 @@ const styles = StyleSheet.create({
   },
   dot: {
     backgroundColor: colors.border,
-    borderRadius: 8,
-    height: 14,
-    width: 14,
+    borderRadius: 5,
+    height: 10,
+    width: 10,
   },
   dotDone: {
     backgroundColor: colors.primary,
@@ -91,11 +91,14 @@ const styles = StyleSheet.create({
   dotCurrent: {
     backgroundColor: colors.surface,
     borderColor: colors.primary,
-    borderWidth: 3,
-    height: 16,
-    width: 16,
+    borderWidth: 2,
+    height: 12,
+    width: 12,
   },
   label: {
+    color: colors.primary,
     fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
 });

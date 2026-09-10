@@ -23,7 +23,7 @@ export function EmptyState({
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Ionicons color={colors.primary} name={icon} size={28} />
+        <Ionicons color={colors.primary} name={icon} size={26} />
       </View>
       <Typography style={styles.title} variant="subtitle">
         {title}
@@ -48,8 +48,10 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: colors.secondary,
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    borderWidth: 1,
     height: 64,
     justifyContent: "center",
     marginBottom: spacing.xs,
@@ -57,10 +59,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.ink,
-    fontWeight: "700",
+    fontWeight: "600",
     textAlign: "center",
   },
   description: {
+    letterSpacing: 0.1,
     maxWidth: 280,
     textAlign: "center",
   },

@@ -7,7 +7,7 @@ import {
   useRouter,
 } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
@@ -21,6 +21,7 @@ import { getOrderById } from "@/src/services/order.service";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
 import {
+  deliveryStatusLabel,
   formatDateLabel,
   formatDateTimeLabel,
   orderStatusLabel,
@@ -147,6 +148,9 @@ export default function OrderDetailScreen() {
                 Pagamento: {paymentStatusLabel(order.paymentStatus)} ·{" "}
                 {paymentMethodLabel(order.paymentMethod)}
               </Typography>
+              <Typography variant="caption">
+                Entrega: {deliveryStatusLabel(order.deliveryStatus)}
+              </Typography>
             </View>
 
             <View style={styles.card}>
@@ -155,9 +159,20 @@ export default function OrderDetailScreen() {
               </Typography>
               <OrderTimeline orderStatus={order.orderStatus} />
               {order.delivery?.trackingUrl ? (
-                <Typography variant="caption">
-                  Rastreio: {order.delivery.trackingUrl}
-                </Typography>
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => {
+                    void Linking.openURL(order.delivery!.trackingUrl!);
+                  }}
+                  style={styles.trackingHit}
+                >
+                  <Typography style={styles.link} variant="caption">
+                    Abrir rastreio
+                  </Typography>
+                  <Typography selectable variant="caption">
+                    {order.delivery.trackingUrl}
+                  </Typography>
+                </Pressable>
               ) : null}
               {order.delivery?.courier?.name ? (
                 <Typography variant="caption">
@@ -295,6 +310,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   value: {
+    fontWeight: "700",
+  },
+  trackingHit: {
+    gap: spacing.xs,
+    minHeight: 44,
+    paddingVertical: spacing.xs,
+  },
+  link: {
+    color: colors.primary,
     fontWeight: "700",
   },
   itemRow: {

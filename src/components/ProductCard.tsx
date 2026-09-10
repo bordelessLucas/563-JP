@@ -45,30 +45,31 @@ export function ProductCard({
       style={({ pressed }) => [
         styles.card,
         { width },
-        onPromo && styles.cardPromo,
         pressed && styles.pressed,
         unavailable && styles.unavailable,
       ]}
     >
-      {image ? (
-        <Image
-          accessibilityIgnoresInvertColors
-          source={{ uri: image }}
-          style={styles.image}
-        />
-      ) : (
-        <View style={[styles.image, styles.imageFallback]} />
-      )}
-      {onPromo ? (
-        <View style={styles.promoBadge}>
-          <Typography style={styles.promoBadgeLabel} variant="caption">
-            Promo
-          </Typography>
-        </View>
-      ) : null}
+      <View style={styles.imageWrap}>
+        {image ? (
+          <Image
+            accessibilityIgnoresInvertColors
+            source={{ uri: image }}
+            style={styles.image}
+          />
+        ) : (
+          <View style={[styles.image, styles.imageFallback]} />
+        )}
+        {onPromo ? (
+          <View style={styles.promoBadge}>
+            <Typography style={styles.promoBadgeLabel} variant="caption">
+              Promo
+            </Typography>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.content}>
         {categoryName ? (
-          <Typography numberOfLines={1} variant="caption">
+          <Typography numberOfLines={1} style={styles.category} variant="caption">
             {categoryName}
           </Typography>
         ) : null}
@@ -103,21 +104,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: "hidden",
   },
-  cardPromo: {
-    backgroundColor: colors.softAccent,
-    borderColor: colors.border,
-    borderWidth: 1,
-  },
   pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.94,
   },
   unavailable: {
     opacity: 0.55,
   },
+  imageWrap: {
+    position: "relative",
+  },
   image: {
     backgroundColor: colors.secondary,
-    height: 148,
+    height: 156,
     width: "100%",
   },
   imageFallback: {
@@ -135,15 +133,20 @@ const styles = StyleSheet.create({
   promoBadgeLabel: {
     color: colors.white,
     fontWeight: "700",
-    letterSpacing: 0.4,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   content: {
     gap: 6,
-    padding: spacing.sm,
+    padding: spacing.md,
+  },
+  category: {
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   name: {
-    fontWeight: "700",
+    fontWeight: "600",
+    letterSpacing: 0,
     minHeight: 40,
   },
   price: {
@@ -155,6 +158,7 @@ const styles = StyleSheet.create({
   },
   priceOld: {
     color: colors.muted,
+    letterSpacing: 0,
     textDecorationLine: "line-through",
   },
   pricePromo: {

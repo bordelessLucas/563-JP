@@ -229,17 +229,11 @@ export function ProductDetailScreen() {
 
               {added ? (
                 <InlineNotice
-                  description="Você já pode revisar quantidades, editar a mensagem e seguir para a entrega."
+                  description="Revise quantidades no carrinho ou continue escolhendo."
                   title="Adicionado ao carrinho"
                   tone="success"
                 />
-              ) : (
-                <InlineNotice
-                  description="Escolha a quantidade, inclua uma mensagem se quiser e adicione ao pedido."
-                  title="Monte seu pedido"
-                  tone="info"
-                />
-              )}
+              ) : null}
 
               <View style={styles.bottomSpacer} />
             </View>
@@ -294,16 +288,13 @@ const styles = StyleSheet.create({
   backButton: {
     alignItems: "center",
     backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radius.xl,
-    elevation: 2,
+    borderWidth: 1,
     height: 44,
     justifyContent: "center",
     left: spacing.lg,
     position: "absolute",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
     width: 44,
     zIndex: 2,
   },
@@ -317,41 +308,41 @@ const styles = StyleSheet.create({
   },
   price: {
     color: colors.primary,
-    fontSize: 28,
-    lineHeight: 34,
   },
   priceBlock: {
     gap: 2,
   },
   priceOld: {
     color: colors.muted,
+    letterSpacing: 0,
     textDecorationLine: "line-through",
   },
   pricePromo: {
     color: colors.accent,
-    fontSize: 28,
-    fontWeight: "700",
-    lineHeight: 34,
   },
   promoPill: {
     alignSelf: "flex-start",
-    backgroundColor: colors.accent,
+    backgroundColor: colors.softAccent,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
   },
   promoPillLabel: {
-    color: colors.white,
+    color: colors.accent,
     fontWeight: "700",
-    letterSpacing: 0.3,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   sectionLabel: {
+    color: colors.muted,
     fontWeight: "700",
+    letterSpacing: 0.8,
     marginTop: spacing.md,
+    textTransform: "uppercase",
   },
   description: {
     color: colors.ink,
+    letterSpacing: 0,
   },
   quantityRow: {
     alignItems: "center",
@@ -362,8 +353,10 @@ const styles = StyleSheet.create({
   },
   qtyButton: {
     alignItems: "center",
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radius.md,
+    borderWidth: 1,
     height: 44,
     justifyContent: "center",
     width: 44,
@@ -393,7 +386,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   bottomSpacer: {
-    height: 160,
+    height: 148,
   },
   ctaBar: {
     backgroundColor: colors.surface,

@@ -16,9 +16,9 @@ const toneColor = {
 } as const;
 
 const toneBackground = {
-  success: "#E7F4EE",
-  warning: "#F8F0DE",
-  error: "#F8E8EA",
+  success: colors.successSoft,
+  warning: colors.warningSoft,
+  error: colors.errorSoft,
 } as const;
 
 export function StockBadge({ status }: StockBadgeProps) {
@@ -27,7 +27,10 @@ export function StockBadge({ status }: StockBadgeProps) {
   return (
     <View style={[styles.badge, { backgroundColor: toneBackground[tone] }]}>
       <View style={[styles.dot, { backgroundColor: toneColor[tone] }]} />
-      <Typography style={{ color: toneColor[tone] }} variant="caption">
+      <Typography
+        style={[styles.label, { color: toneColor[tone] }]}
+        variant="caption"
+      >
         {stockLabel(status)}
       </Typography>
     </View>
@@ -46,7 +49,11 @@ const styles = StyleSheet.create({
   },
   dot: {
     borderRadius: 4,
-    height: 8,
-    width: 8,
+    height: 7,
+    width: 7,
+  },
+  label: {
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });

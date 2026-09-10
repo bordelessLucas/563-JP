@@ -1,6 +1,14 @@
 import { StyleSheet, Text, TextProps } from "react-native";
 
-import { colors, fontFamily, type } from "@/src/components/theme";
+import {
+  colors,
+  fontFamily,
+  fontFamilyBold,
+  fontFamilyDisplay,
+  fontFamilyDisplayBold,
+  fontFamilyMedium,
+  type,
+} from "@/src/components/theme";
 
 type TypographyVariant = "display" | "title" | "subtitle" | "body" | "caption";
 
@@ -22,27 +30,37 @@ const styles = StyleSheet.create({
     fontFamily,
   },
   display: {
+    fontFamily: fontFamilyDisplayBold,
     fontSize: type.display,
     fontWeight: "700",
-    lineHeight: 38,
+    letterSpacing: -0.4,
+    lineHeight: 40,
   },
   title: {
+    fontFamily: fontFamilyDisplay,
     fontSize: type.title,
-    fontWeight: "700",
+    fontWeight: "600",
+    letterSpacing: -0.3,
     lineHeight: 32,
   },
   subtitle: {
-    color: colors.muted,
+    color: colors.ink,
+    fontFamily: fontFamilyMedium,
     fontSize: type.subtitle,
-    lineHeight: 26,
+    fontWeight: "500",
+    lineHeight: 24,
   },
   body: {
+    fontFamily,
     fontSize: type.body,
     lineHeight: 24,
   },
   caption: {
     color: colors.muted,
+    fontFamily: fontFamilyMedium,
     fontSize: type.caption,
-    lineHeight: 18,
+    fontWeight: "500",
+    letterSpacing: 0.15,
+    lineHeight: 17,
   },
 });
