@@ -14,7 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "APP_ENV": "preview"
+        "APP_ENV": "preview",
+        "EXPO_PUBLIC_CHECKOUT_MODE": "client"
       }
     },
     "production": {

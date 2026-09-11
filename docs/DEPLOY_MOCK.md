@@ -8,7 +8,37 @@ Leia também: `docs/DEPLOYMENT.md`, `docs/ORDER_FLOW.md`, `.env.example`.
 
 ## Modo demo (validação com cliente)
 
-**Estado atual desejado para APK de apresentação:** checkout 100% mock.
+**Estado atual para APK de apresentação:** checkout **mock no app** (`EXPO_PUBLIC_CHECKOUT_MODE=client`).
+
+Isso existe porque o projeto ainda está em **Spark** e as Cloud Functions Gen2 não podem ser deployadas sem **Blaze**. Sem Functions, o fluxo antigo (callables) deixava o APK sem pedido/pagamento/admin.
+
+| Camada | Valor demo |
+|--------|------------|
+| `EXPO_PUBLIC_CHECKOUT_MODE` | `client` (padrão no app + `eas.json` preview) |
+| Firestore rules | cliente cria próprio pedido; admin atualiza status |
+| Frete | `settings/operation.deliveryFee` |
+| Admin | botão “Avançar → …” na timeline mock |
+| `PAYMENT_PROVIDER` / `DELIVERY_PROVIDER` | `mock` (quando Functions existirem) |
+
+### Fluxos que o cliente consegue validar no APK
+
+1. Catálogo → produto → carrinho  
+2. Checkout (destinatário → endereço → agenda → resumo → pagamento mock)  
+3. Pedido aparece em “Meus pedidos” + timeline  
+4. Admin avança status até entregue  
+
+### Reverter para backend real (rápido)
+
+1. Upgrade Firebase para **Blaze** + `firebase deploy --only functions` (tabela abaixo / `DEPLOY_REAL.md`).
+2. No app: `EXPO_PUBLIC_CHECKOUT_MODE=backend` e rebuild APK.
+3. Em `firestore.rules`: `orders` `create`/`update`/`delete: if false` (só Admin SDK).
+4. Restaurar proteção de `deliveryQuote` em `carts` se voltar ao fluxo de cotação server-side.
+
+---
+
+## Modo demo via Cloud Functions (quando Blaze estiver ativo)
+
+**Estado desejado com Functions no ar:** checkout 100% mock no servidor.
 
 | Param | Valor demo |
 |--------|------------|
@@ -34,10 +64,10 @@ Defaults no código (`functions/src/config.ts`): `PAYMENT_PROVIDER` e `DELIVERY_
 
 ## Contexto (não pule)
 
-1. O app Expo já aponta para `jp-6a9d2` via `EXPO_PUBLIC_*`. **Não precisa rebuildar o APK** só para ligar o mock, se a config Firebase do APK for desse projeto.
-2. O mock **não roda no app**. Roda nas **Cloud Functions** (`MockPaymentProvider` + `MockDeliveryProvider`).
-3. Deploy de Functions Gen2 **exige Blaze** (pay-as-you-go). No **Spark**, `firebase deploy --only functions` falha.
-4. Fail-closed: sem `APP_ENV` explícito de não-produção + `ENABLE_MOCK_PAYMENT=true`, `simulateMockPayment` e `PAYMENT_PROVIDER=mock` em produção são bloqueados (`functions/src/config.ts`).
+1. O app Expo já aponta para `jp-6a9d2` via `EXPO_PUBLIC_*`.
+2. Com `EXPO_PUBLIC_CHECKOUT_MODE=client`, o mock **roda no app** (Firestore). Com `backend`, o mock **roda nas Cloud Functions**.
+3. Deploy de Functions Gen2 **exige Blaze**. No **Spark**, `firebase deploy --only functions` falha — por isso o modo `client` existe.
+4. Fail-closed nas Functions: sem `APP_ENV` explícito de não-produção + `ENABLE_MOCK_PAYMENT=true`, `simulateMockPayment` e `PAYMENT_PROVIDER=mock` em produção são bloqueados.
 
 ---
 

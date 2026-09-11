@@ -9,6 +9,8 @@ import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { isClientDemoCheckout } from "@/src/config/demo";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   markOrderPreparing,
@@ -17,7 +19,11 @@ import {
   requestDelivery,
   retryDelivery,
 } from "@/src/services/backend.service";
-import { listAllOrders } from "@/src/services/order.service";
+import {
+  advanceOrderStatus,
+  listAllOrders,
+  nextOrderStatus,
+} from "@/src/services/order.service";
 import type { ThemeColors } from "@/src/theme/types";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
@@ -32,8 +38,10 @@ import {
 
 export default function AdminOrdersScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const clientDemo = isClientDemoCheckout();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,6 +69,41 @@ export default function AdminOrdersScreen() {
       void load();
     }, [load]),
   );
+
+  function confirmAdvance(order: Order) {
+    const next = nextOrderStatus(order.orderStatus);
+    if (!next || !user) return;
+    Alert.alert(
+      "Avançar status",
+      `De “${orderStatusLabel(order.orderStatus)}” para “${orderStatusLabel(next)}”?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Avançar",
+          onPress: () => void runAdvance(order.id, next),
+        },
+      ],
+    );
+  }
+
+  async function runAdvance(
+    orderId: string,
+    next: NonNullable<ReturnType<typeof nextOrderStatus>>,
+  ) {
+    if (!user) return;
+    setBusyId(orderId);
+    try {
+      await advanceOrderStatus(orderId, next, user.uid);
+      await load();
+    } catch (err) {
+      Alert.alert(
+        "Avançar status",
+        err instanceof Error ? err.message : "Falha ao atualizar.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function runBackend(
     orderId: string,
@@ -100,11 +143,19 @@ export default function AdminOrdersScreen() {
     >
       <Typography variant="caption">ADMIN · PEDIDOS</Typography>
       <Typography style={styles.title} variant="title">
-        Operação
+        {clientDemo ? "Operação da demo" : "Operação"}
       </Typography>
       <InlineNotice
-        description="Somente callables do backend alteram status. Pagamento aprovado não cria Uber: preparar → pronto → solicitar entrega."
-        title="Pagamento e entrega desacoplados"
+        description={
+          clientDemo
+            ? "Avance o status manualmente para a timeline do cliente. Sem GPS e sem API de entrega."
+            : "Somente callables do backend alteram status. Pagamento aprovado não cria Uber: preparar → pronto → solicitar entrega."
+        }
+        title={
+          clientDemo
+            ? "Controle mock de logística"
+            : "Pagamento e entrega desacoplados"
+        }
         tone="info"
       />
 
@@ -124,6 +175,58 @@ export default function AdminOrdersScreen() {
         <View style={styles.list}>
           {orders.map((order) => {
             const busy = busyId === order.id;
+
+            if (clientDemo) {
+              const next = nextOrderStatus(order.orderStatus);
+              return (
+                <View key={order.id} style={styles.card}>
+                  <View style={styles.header}>
+                    <Typography style={styles.orderNumber} variant="body">
+                      {order.orderNumber}
+                    </Typography>
+                    <View style={styles.badge}>
+                      <Typography style={styles.badgeLabel} variant="caption">
+                        {orderStatusLabel(order.orderStatus)}
+                      </Typography>
+                    </View>
+                  </View>
+                  <Typography variant="caption">
+                    Cliente: {order.customerName || order.customerEmail}
+                  </Typography>
+                  <Typography variant="caption">
+                    {formatDateTimeLabel(order.createdAt)} ·{" "}
+                    {paymentMethodLabel(order.paymentMethod)}
+                  </Typography>
+                  <Typography variant="caption">
+                    Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
+                    {order.deliveryPeriodLabel}
+                  </Typography>
+                  <Typography style={styles.total} variant="body">
+                    {formatCurrency(order.total)}
+                  </Typography>
+                  <Pressable
+                    onPress={() => router.push(`/order/${order.id}` as Href)}
+                    style={({ pressed }) => pressed && { opacity: 0.85 }}
+                  >
+                    <Typography style={styles.link} variant="caption">
+                      Ver detalhe →
+                    </Typography>
+                  </Pressable>
+                  {next ? (
+                    <Button
+                      label={`Avançar → ${orderStatusLabel(next)}`}
+                      loading={busy}
+                      onPress={() => confirmAdvance(order)}
+                    />
+                  ) : (
+                    <Typography variant="caption">
+                      Fluxo concluído ou fora da sequência demo.
+                    </Typography>
+                  )}
+                </View>
+              );
+            }
+
             const paymentOk =
               order.paymentStatus === "paid" ||
               order.payment?.status === "approved";

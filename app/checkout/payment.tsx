@@ -12,6 +12,7 @@ import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { isClientDemoCheckout } from "@/src/config/demo";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
 import { useTheme } from "@/src/contexts/ThemeContext";
@@ -19,6 +20,7 @@ import {
   createCheckout,
   simulateMockPayment,
 } from "@/src/services/backend.service";
+import { createOrderFromCart } from "@/src/services/order.service";
 import type { ThemeColors } from "@/src/theme/types";
 import { PaymentMethod } from "@/src/types/order";
 import {
@@ -36,9 +38,10 @@ export default function CheckoutPaymentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ method?: string }>();
   const { user, profile } = useAuth();
-  const { cart, refreshCart } = useCart();
+  const { cart, emptyCart, refreshCart } = useCart();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const clientDemo = isClientDemoCheckout();
 
   const initialMethod: PaymentMethod =
     params.method === "card" ? "card" : "pix";
@@ -114,11 +117,56 @@ export default function CheckoutPaymentScreen() {
     return checkout;
   }
 
+  async function simulateApproveClientDemo() {
+    if (!user || !cart) return;
+
+    setBusy(true);
+    setError(null);
+    setQuoteNotice(null);
+    setPhase("awaiting");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      const order = await createOrderFromCart({
+        customerId: user.uid,
+        customerName: profile?.name ?? user.displayName ?? "Cliente",
+        customerEmail: profile?.email ?? user.email ?? "",
+        cart,
+        paymentMethod: method,
+      });
+      setServerTotal(order.total);
+      try {
+        await emptyCart();
+      } catch {
+        try {
+          await emptyCart();
+        } catch {
+          /* ignore */
+        }
+      }
+      await goToSuccess(order.id, order.orderNumber);
+    } catch (err) {
+      setPhase("failed");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível criar o pedido demo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function simulateApprove() {
     if (!user || !cart || cart.items.length === 0) return;
     if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
       setError("Complete destinatário, endereço e agenda antes de pagar.");
       router.replace(checkoutRecoveryHref(cart.checkout) as Href);
+      return;
+    }
+
+    if (clientDemo) {
+      await simulateApproveClientDemo();
       return;
     }
 
@@ -164,6 +212,14 @@ export default function CheckoutPaymentScreen() {
   }
 
   async function simulateFail() {
+    if (clientDemo) {
+      setPhase("failed");
+      setError(
+        "Pagamento recusado (simulação). Nada foi cobrado. Você pode tentar de novo.",
+      );
+      return;
+    }
+
     if (!user || !cart || cart.items.length === 0) return;
     if (!readyToPay || !cart.checkout?.address || !cart.checkout.recipient) {
       setError("Complete destinatário, endereço e agenda antes de pagar.");
@@ -247,8 +303,12 @@ export default function CheckoutPaymentScreen() {
           Pagamento
         </Typography>
         <InlineNotice
-          description="O valor final é confirmado no servidor. PIX e cartão nesta versão são apenas demonstração."
-          title="Pagamento seguro"
+          description={
+            clientDemo
+              ? "PIX e cartão são só para ver o fluxo. Ao confirmar, o pedido demo é registrado no Firestore."
+              : "O valor final é confirmado no servidor. PIX e cartão nesta versão são apenas demonstração."
+          }
+          title={clientDemo ? "Nenhuma cobrança nesta versão" : "Pagamento seguro"}
           tone="info"
         />
 
@@ -262,9 +322,11 @@ export default function CheckoutPaymentScreen() {
 
             <View style={styles.totalCard}>
           <Typography variant="caption">
-            {serverTotal != null
-              ? "Total confirmado pelo servidor"
-              : "Total estimado (confirmado no pagamento)"}
+            {clientDemo
+              ? "Total do pedido (demo)"
+              : serverTotal != null
+                ? "Total confirmado pelo servidor"
+                : "Total estimado (confirmado no pagamento)"}
           </Typography>
           <Typography style={styles.totalValue} variant="title">
             {totalLabel}

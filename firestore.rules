@@ -43,33 +43,10 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Client demo prototype: owner may fully manage their cart
+    // (no Cloud Functions quote ownership while CHECKOUT_MODE=client).
     match /carts/{userId} {
-      // Owner may write cart, but cannot invent/alter server deliveryQuote.
-      // Quotes are written only by Cloud Functions (Admin SDK).
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if (isOwner(userId) || isAdmin())
-        && cartCreateWithoutQuote();
-      allow delete: if isOwner(userId) || isAdmin();
-      allow update: if (isOwner(userId) || isAdmin())
-        && cartDeliveryQuoteProtected();
-    }
-
-    // Client create must not seed a forged deliveryQuote.
-    function cartCreateWithoutQuote() {
-      let checkout = request.resource.data.get('checkout', null);
-      return checkout == null
-        || checkout.get('deliveryQuote', null) == null;
-    }
-
-    // Client may clear quote or keep the existing server quote unchanged.
-    // Inventing a quote when none exists (or changing fee) is denied.
-    function cartDeliveryQuoteProtected() {
-      let oldQuote = resource.data.get('checkout', {}).get('deliveryQuote', null);
-      let newCheckout = request.resource.data.get('checkout', null);
-      let newQuote = newCheckout == null
-        ? null
-        : newCheckout.get('deliveryQuote', null);
-      return newQuote == null || newQuote == oldQuote;
+      allow read, create, update, delete: if isOwner(userId) || isAdmin();
     }
 
     match /addresses/{addressId} {
@@ -84,25 +61,33 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Orders: client/admin SDK cannot mutate. All writes via Cloud Functions (Admin SDK).
+    // Client demo: customer creates own paid orders; admin advances status.
+    // Switch back to create/update: false when EXPO_PUBLIC_CHECKOUT_MODE=backend
+    // and Cloud Functions own all writes (see docs/DEPLOY_MOCK.md).
     match /orders/{orderId} {
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'orderNumber', 'customerId', 'items', 'recipient',
+          'deliveryAddress', 'deliveryDate', 'subtotal', 'total',
+          'paymentMethod', 'paymentStatus', 'orderStatus', 'deliveryStatus'
+        ]);
       allow read: if isAdmin()
         || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /payments/{paymentId} {
       allow read: if isAdmin() || (signedIn()
         && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.customerId == request.auth.uid);
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
     match /deliveries/{deliveryId} {
       allow read: if isAdmin() || (signedIn()
         && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.customerId == request.auth.uid);
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
     match /webhookEvents/{eventId} {

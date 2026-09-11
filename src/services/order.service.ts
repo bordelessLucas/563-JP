@@ -1,4 +1,5 @@
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -6,12 +7,15 @@ import {
   getFirestore,
   orderBy,
   query,
+  serverTimestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 
 import { firebaseApp } from "@/src/services/firebase";
 import { Cart } from "@/src/types/checkout";
 import {
+  DELIVERY_STATUS_BY_ORDER,
   DeliveryStatus,
   Order,
   OrderStatus,
@@ -21,6 +25,25 @@ import {
 } from "@/src/types/order";
 
 const database = getFirestore(firebaseApp);
+
+const DEMO_STATUS_FLOW: OrderStatus[] = [
+  "paid",
+  "preparing",
+  "ready_for_delivery",
+  "out_for_delivery",
+  "delivered",
+];
+
+function buildOrderNumber(): string {
+  const now = new Date();
+  const stamp = [
+    now.getFullYear(),
+    `${now.getMonth() + 1}`.padStart(2, "0"),
+    `${now.getDate()}`.padStart(2, "0"),
+  ].join("");
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `JP-${stamp}-${suffix}`;
+}
 
 function mapOrder(id: string, data: Record<string, unknown>): Order {
   return {
@@ -86,6 +109,102 @@ function mapOrder(id: string, data: Record<string, unknown>): Order {
   };
 }
 
+/**
+ * Client-side demo checkout (EXPO_PUBLIC_CHECKOUT_MODE=client).
+ * Creates a paid order in Firestore so the APK can validate the full flow
+ * without Cloud Functions.
+ */
+export async function createOrderFromCart(input: {
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  cart: Cart;
+  paymentMethod: PaymentMethod;
+}): Promise<Order> {
+  const { cart, paymentMethod } = input;
+  if (!cart.checkout?.address || !cart.checkout.recipient) {
+    throw new Error("Checkout incompleto para criar o pedido.");
+  }
+  if (
+    !cart.checkout.deliveryDate?.trim() ||
+    !cart.checkout.deliveryPeriodId?.trim() ||
+    !cart.checkout.deliveryPeriodLabel?.trim()
+  ) {
+    throw new Error("Informe data e período de entrega antes de pagar.");
+  }
+  if (
+    !cart.checkout.recipient.name.trim() ||
+    !cart.checkout.address.street.trim() ||
+    !cart.checkout.address.number.trim()
+  ) {
+    throw new Error("Destinatário ou endereço incompletos.");
+  }
+  if (cart.items.length === 0) {
+    throw new Error("Carrinho vazio.");
+  }
+
+  const nowIso = new Date().toISOString();
+  const history: StatusHistoryEntry[] = [
+    {
+      field: "paymentStatus",
+      status: "paid",
+      at: nowIso,
+      by: input.customerId,
+    },
+    {
+      field: "orderStatus",
+      status: "paid",
+      at: nowIso,
+      by: input.customerId,
+    },
+    {
+      field: "deliveryStatus",
+      status: "not_started",
+      at: nowIso,
+      by: input.customerId,
+    },
+  ];
+
+  const payload = {
+    orderNumber: buildOrderNumber(),
+    customerId: input.customerId,
+    customerName: input.customerName,
+    customerEmail: input.customerEmail,
+    items: cart.items,
+    recipient: cart.checkout.recipient,
+    deliveryAddress: {
+      cep: cart.checkout.address.cep,
+      street: cart.checkout.address.street,
+      number: cart.checkout.address.number,
+      complement: cart.checkout.address.complement,
+      neighborhood: cart.checkout.address.neighborhood,
+      city: cart.checkout.address.city,
+      state: cart.checkout.address.state,
+      reference: cart.checkout.address.reference,
+    },
+    deliveryDate: cart.checkout.deliveryDate,
+    deliveryPeriodId: cart.checkout.deliveryPeriodId,
+    deliveryPeriodLabel: cart.checkout.deliveryPeriodLabel,
+    subtotal: cart.subtotal,
+    deliveryFee: cart.deliveryFee,
+    total: cart.total,
+    paymentMethod,
+    paymentStatus: "paid" as PaymentStatus,
+    orderStatus: "paid" as OrderStatus,
+    deliveryStatus: "not_started" as DeliveryStatus,
+    statusHistory: history,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  const reference = await addDoc(collection(database, "orders"), payload);
+  return mapOrder(reference.id, {
+    ...payload,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+}
+
 export async function getOrderById(orderId: string): Promise<Order | null> {
   const snapshot = await getDoc(doc(database, "orders", orderId));
   if (!snapshot.exists()) return null;
@@ -116,39 +235,54 @@ export async function listAllOrders(): Promise<Order[]> {
   );
 }
 
-/**
- * @deprecated Client-side status advances are forbidden.
- * Use Cloud Functions callables (markOrderPreparing, markOrderReady, requestDelivery, …).
- */
+/** Admin demo: advance order along the prototype logistics timeline. */
 export async function advanceOrderStatus(
-  _orderId: string,
-  _nextOrderStatus: OrderStatus,
-  _adminId: string,
+  orderId: string,
+  nextStatus: OrderStatus,
+  adminId: string,
 ): Promise<Order> {
-  throw new Error(
-    "Avanço de status pelo app foi desativado. Use as ações do backend (preparar / pronto / solicitar entrega).",
-  );
+  const current = await getOrderById(orderId);
+  if (!current) throw new Error("Pedido não encontrado.");
+
+  const nowIso = new Date().toISOString();
+  const nextDelivery =
+    DELIVERY_STATUS_BY_ORDER[nextStatus] ?? current.deliveryStatus;
+
+  const history: StatusHistoryEntry[] = [
+    ...current.statusHistory,
+    {
+      field: "orderStatus",
+      status: nextStatus,
+      at: nowIso,
+      by: adminId,
+    },
+    {
+      field: "deliveryStatus",
+      status: nextDelivery,
+      at: nowIso,
+      by: adminId,
+    },
+  ];
+
+  await updateDoc(doc(database, "orders", orderId), {
+    orderStatus: nextStatus,
+    deliveryStatus: nextDelivery,
+    statusHistory: history,
+    updatedAt: serverTimestamp(),
+  });
+
+  return {
+    ...current,
+    orderStatus: nextStatus,
+    deliveryStatus: nextDelivery,
+    statusHistory: history,
+    updatedAt: nowIso,
+  };
 }
 
-/** Informational only — critical transitions are enforced server-side. */
+/** Next status in the client-demo logistics ladder. */
 export function nextOrderStatus(current: OrderStatus): OrderStatus | null {
-  if (current === "paid") return "preparing";
-  if (current === "preparing") return "ready_for_pickup";
-  return null;
-}
-
-/**
- * @deprecated Prefer backend createCheckout + simulateMockPayment.
- * Kept only for emergency local demos; Firestore rules now block client creates.
- */
-export async function createOrderFromCart(input: {
-  customerId: string;
-  customerName: string;
-  customerEmail: string;
-  cart: Cart;
-  paymentMethod: PaymentMethod;
-}): Promise<Order> {
-  throw new Error(
-    "Criação de pedido pelo app foi desativada. Use o checkout via backend (Cloud Functions).",
-  );
+  const index = DEMO_STATUS_FLOW.indexOf(current);
+  if (index < 0 || index >= DEMO_STATUS_FLOW.length - 1) return null;
+  return DEMO_STATUS_FLOW[index + 1] ?? null;
 }

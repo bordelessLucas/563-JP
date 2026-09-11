@@ -1,5 +1,6 @@
 import {
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getFirestore,
@@ -7,6 +8,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 
+import { isClientDemoCheckout } from "@/src/config/demo";
 import { firebaseApp } from "@/src/services/firebase";
 import { getOperationSettings } from "@/src/services/settings.service";
 import {
@@ -16,6 +18,30 @@ import {
 } from "@/src/types/checkout";
 
 const database = getFirestore(firebaseApp);
+
+/** Firestore rejects `undefined`; never write deliveryQuote: undefined. */
+function serializeCheckout(
+  checkout: CheckoutDraft | null,
+  clearQuote: boolean,
+): Record<string, unknown> | null {
+  if (!checkout) return null;
+
+  const payload: Record<string, unknown> = {
+    recipient: checkout.recipient,
+    address: checkout.address,
+    deliveryDate: checkout.deliveryDate ?? "",
+    deliveryPeriodId: checkout.deliveryPeriodId ?? "",
+    deliveryPeriodLabel: checkout.deliveryPeriodLabel ?? "",
+  };
+
+  if (clearQuote) {
+    payload.deliveryQuote = deleteField();
+  } else if (checkout.deliveryQuote) {
+    payload.deliveryQuote = checkout.deliveryQuote;
+  }
+
+  return payload;
+}
 
 function emptyCart(userId: string, deliveryFee = 0): Cart {
   return {
@@ -61,29 +87,56 @@ function mapCart(userId: string, data: Record<string, unknown>): Cart {
   };
 }
 
-async function persistCart(cart: Cart): Promise<Cart> {
+async function persistCart(
+  cart: Cart,
+  options?: { clearDeliveryQuote?: boolean },
+): Promise<Cart> {
   const totals = calculateCartTotals(cart.items, cart.deliveryFee);
+  const clearQuote =
+    options?.clearDeliveryQuote === true || isClientDemoCheckout();
   const nextCart: Cart = {
     ...cart,
     ...totals,
     deliveryFee: totals.deliveryFee,
   };
 
+  // In-memory may keep deliveryQuote undefined; payload must not.
+  const checkoutPayload = serializeCheckout(cart.checkout, clearQuote);
+
   await setDoc(
     doc(database, "carts", cart.userId),
     {
       userId: nextCart.userId,
-      items: nextCart.items,
+      items: nextCart.items.map((item) => {
+        const row: Record<string, unknown> = {
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          message: item.message ?? "",
+        };
+        if (item.productImage) row.productImage = item.productImage;
+        return row;
+      }),
       subtotal: nextCart.subtotal,
       deliveryFee: nextCart.deliveryFee,
       total: nextCart.total,
-      checkout: nextCart.checkout,
+      checkout: checkoutPayload,
       updatedAt: serverTimestamp(),
     },
     { merge: true },
   );
 
-  return nextCart;
+  return {
+    ...nextCart,
+    checkout:
+      clearQuote && nextCart.checkout
+        ? (() => {
+            const { deliveryQuote: _q, ...draft } = nextCart.checkout;
+            return draft;
+          })()
+        : nextCart.checkout,
+  };
 }
 
 export async function getCart(userId: string): Promise<Cart> {
@@ -189,12 +242,30 @@ export async function saveCheckoutDraft(
   checkout: CheckoutDraft,
 ): Promise<Cart> {
   const cart = await getCart(userId);
-  // deliveryQuote is owned by Cloud Functions (createDeliveryQuote). Never trust
+  const settings = await getOperationSettings();
+
+  if (isClientDemoCheckout()) {
+    // Prototype: frete fixo das settings (sem quote de Functions).
+    const { deliveryQuote: _ignored, ...draft } = checkout;
+    return persistCart(
+      {
+        ...cart,
+        checkout: draft,
+        deliveryFee: settings.deliveryFee,
+      },
+      { clearDeliveryQuote: true },
+    );
+  }
+
+  // Backend mode: deliveryQuote is owned by Cloud Functions. Never trust
   // client-supplied feeCents — preserve the server quote already on the cart.
-  const safeCheckout: CheckoutDraft = {
-    ...checkout,
-    deliveryQuote: cart.checkout?.deliveryQuote ?? undefined,
-  };
+  const existingQuote = cart.checkout?.deliveryQuote;
+  const safeCheckout: CheckoutDraft = existingQuote
+    ? { ...checkout, deliveryQuote: existingQuote }
+    : (() => {
+        const { deliveryQuote: _ignored, ...draft } = checkout;
+        return draft;
+      })();
   const fee =
     typeof safeCheckout.deliveryQuote?.feeCents === "number"
       ? safeCheckout.deliveryQuote.feeCents / 100

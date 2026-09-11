@@ -9,9 +9,11 @@ import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { isClientDemoCheckout } from "@/src/config/demo";
 import { useCart } from "@/src/contexts/CartContext";
 import { useTheme } from "@/src/contexts/ThemeContext";
 import { createDeliveryQuote } from "@/src/services/backend.service";
+import { getOperationSettings } from "@/src/services/settings.service";
 import type { ThemeColors } from "@/src/theme/types";
 import { formatCurrency } from "@/src/utils/format";
 
@@ -52,6 +54,22 @@ export default function CheckoutSummaryScreen() {
       setQuoteError(null);
       try {
         const previousFee = cart.deliveryFee;
+
+        if (isClientDemoCheckout()) {
+          // Prototype APK: frete fixo das settings (sem Cloud Functions).
+          const settings = await getOperationSettings();
+          const { deliveryQuote: _ignored, ...draft } = checkout;
+          await saveCheckout(draft);
+          await refreshCart();
+          if (!active) return;
+          if (Math.abs(previousFee - settings.deliveryFee) > 0.001) {
+            setQuoteNotice(
+              `Frete demo: ${formatCurrency(settings.deliveryFee)}.`,
+            );
+          }
+          return;
+        }
+
         const { quote } = await createDeliveryQuote({
           address,
           persistToCart: true,
@@ -115,7 +133,11 @@ export default function CheckoutSummaryScreen() {
           />
         ) : (
           <InlineNotice
-            description="Na próxima etapa você escolhe PIX ou cartão. O frete vem da cotação do backend."
+            description={
+              isClientDemoCheckout()
+                ? "Na próxima etapa você escolhe PIX ou cartão (simulação). Frete demo das configurações da loja."
+                : "Na próxima etapa você escolhe PIX ou cartão. O frete vem da cotação do backend."
+            }
             title="Tudo certo para pagar"
             tone="success"
           />
@@ -256,7 +278,9 @@ export default function CheckoutSummaryScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="caption">Entrega (cotada)</Typography>
+            <Typography variant="caption">
+              {isClientDemoCheckout() ? "Entrega (demo)" : "Entrega (cotada)"}
+            </Typography>
             <Typography variant="body">
               {formatCurrency(cart?.deliveryFee ?? 0)}
             </Typography>
