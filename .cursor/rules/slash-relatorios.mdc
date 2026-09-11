@@ -1,0 +1,20 @@
+---
+description: Slash commands /rel and /rel2 for session reports
+alwaysApply: true
+---
+
+# Relatórios — slash commands
+
+When the user sends these commands (alone or with a date/scope), generate the report in the chat. Do **not** confuse with EAS/APK builds.
+
+| Command | Meaning |
+|---------|---------|
+| `/rel` | Relatório do que foi **implementado** na sessão (ou data indicada): features, UI, fixes, commits. Objetivo produto/cliente. Conciso. |
+| `/rel2` | Relatório mais completo com info **pertinente a deploy**: env/params, mock vs real, Firebase/EAS, blockers (Blaze, secrets), como reverter, links de build, riscos. |
+
+## Rules
+
+- Default language: Portuguese (user language).
+- Prefer chat delivery unless the user asks for a `.md` file.
+- Do **not** treat `/rel` or `/rel2` as “release”, “reload”, or EAS build.
+- If scope/date is missing, use the current conversation / “today”.
