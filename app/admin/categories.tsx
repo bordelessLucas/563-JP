@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, StyleSheet, Switch, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -7,13 +7,15 @@ import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { Input } from "@/src/components/Input";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   createCategory,
   listAllCategories,
   updateCategory,
 } from "@/src/services/category.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { Category } from "@/src/types/catalog";
 
 const DEFAULT_IMAGE =
@@ -44,6 +46,8 @@ const emptyForm = (order = 1): FormState => ({
 });
 
 export default function AdminCategoriesScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -240,47 +244,49 @@ export default function AdminCategoriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    marginBottom: spacing.md,
-  },
-  form: {
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  switchRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 44,
-  },
-  section: {
-    fontWeight: "700",
-    marginTop: spacing.xl,
-  },
-  list: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  copy: {
-    flex: 1,
-    gap: 4,
-  },
-  name: {
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    title: {
+      marginBottom: spacing.md,
+    },
+    form: {
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    switchRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      minHeight: 44,
+    },
+    section: {
+      fontWeight: "700",
+      marginTop: spacing.xl,
+    },
+    list: {
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    row: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    copy: {
+      flex: 1,
+      gap: 4,
+    },
+    name: {
+      fontWeight: "700",
+    },
+  });
+}

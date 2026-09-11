@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 type EmptyStateProps = {
   title: string;
@@ -20,6 +23,9 @@ export function EmptyState({
   actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
@@ -40,35 +46,35 @@ export function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.xxl,
-  },
-  iconWrap: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    height: 64,
-    justifyContent: "center",
-    marginBottom: spacing.xs,
-    width: 64,
-  },
-  title: {
-    color: colors.ink,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  description: {
-    letterSpacing: 0.1,
-    maxWidth: 280,
-    textAlign: "center",
-  },
-  action: {
-    marginTop: spacing.md,
-    minWidth: 220,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingVertical: spacing.xxl,
+    },
+    iconWrap: {
+      alignItems: "center",
+      backgroundColor: palette.brandBlack,
+      borderRadius: radius.xl,
+      height: 64,
+      justifyContent: "center",
+      marginBottom: spacing.xs,
+      width: 64,
+    },
+    title: {
+      color: palette.ink,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    description: {
+      letterSpacing: 0.1,
+      maxWidth: 280,
+      textAlign: "center",
+    },
+    action: {
+      marginTop: spacing.md,
+      minWidth: 220,
+    },
+  });
+}

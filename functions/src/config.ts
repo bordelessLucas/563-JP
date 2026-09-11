@@ -129,7 +129,7 @@ export function getUberConfig() {
 
 export function getStoreConfigFromEnv(): StoreConfig {
   return {
-    name: env("STORE_NAME", "JP Flores"),
+    name: env("STORE_NAME", "Chuva de Ouro"),
     phone: env("STORE_PHONE", "+5551999999999"),
     street: env("STORE_STREET", "Rua Exemplo"),
     number: env("STORE_NUMBER", "100"),

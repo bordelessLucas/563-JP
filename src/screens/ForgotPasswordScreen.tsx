@@ -1,16 +1,20 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { Input } from "@/src/components/Input";
-import { colors, spacing } from "@/src/components/theme";
+import { spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { useAuthActions } from "@/src/hooks/useAuthActions";
 
 export function ForgotPasswordScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -83,27 +87,29 @@ export function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  back: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginBottom: spacing.lg,
-  },
-  intro: {
-    marginBottom: spacing.lg,
-  },
-  form: {
-    gap: spacing.md,
-  },
-  error: {
-    color: colors.error,
-  },
-  success: {
-    color: colors.primary,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      flex: 1,
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    back: {
+      color: palette.primary,
+      fontWeight: "700",
+      marginBottom: spacing.lg,
+    },
+    intro: {
+      marginBottom: spacing.lg,
+    },
+    form: {
+      gap: spacing.md,
+    },
+    error: {
+      color: palette.error,
+    },
+    success: {
+      color: palette.primary,
+    },
+  });
+}

@@ -1,13 +1,11 @@
+import { useMemo } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 
-import {
-  colors,
-  fontFamilyBold,
-  radius,
-  spacing,
-} from "@/src/components/theme";
+import { fontFamilyBold, radius, spacing } from "@/src/components/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
-type ButtonVariant = "primary" | "secondary" | "outline";
+type ButtonVariant = "primary" | "secondary" | "outline" | "dark" | "whatsapp";
 
 type ButtonProps = {
   label: string;
@@ -24,9 +22,21 @@ export function Button({
   loading = false,
   disabled = false,
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const isDisabled = disabled || loading;
   const isOutline = variant === "outline";
   const isSecondary = variant === "secondary";
+  const isDark = variant === "dark";
+  const isWhatsapp = variant === "whatsapp";
+
+  const spinnerColor =
+    isOutline || isSecondary
+      ? colors.ink
+      : isDark
+        ? colors.primary
+        : colors.onPrimary;
 
   return (
     <Pressable
@@ -38,19 +48,25 @@ export function Button({
         styles.button,
         isSecondary && styles.secondary,
         isOutline && styles.outline,
+        isDark && styles.dark,
+        isWhatsapp && styles.whatsapp,
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
-        pressed && !isDisabled && !isOutline && !isSecondary && styles.primaryPressed,
+        pressed && !isDisabled && variant === "primary" && styles.primaryPressed,
+        pressed && !isDisabled && isDark && styles.darkPressed,
+        pressed && !isDisabled && isWhatsapp && styles.whatsappPressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isOutline ? colors.primary : colors.white} />
+        <ActivityIndicator color={spinnerColor} />
       ) : (
         <Text
           style={[
             styles.label,
             isSecondary && styles.secondaryLabel,
             isOutline && styles.outlineLabel,
+            isDark && styles.darkLabel,
+            isWhatsapp && styles.whatsappLabel,
           ]}
         >
           {label}
@@ -60,43 +76,63 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    justifyContent: "center",
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-  },
-  secondary: {
-    backgroundColor: colors.secondary,
-  },
-  outline: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  pressed: {
-    opacity: 0.92,
-  },
-  primaryPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  label: {
-    color: colors.white,
-    fontFamily: fontFamilyBold,
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  secondaryLabel: {
-    color: colors.primary,
-  },
-  outlineLabel: {
-    color: colors.primary,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    button: {
+      alignItems: "center",
+      backgroundColor: palette.primary,
+      borderRadius: radius.md,
+      justifyContent: "center",
+      minHeight: 52,
+      paddingHorizontal: spacing.lg,
+    },
+    secondary: {
+      backgroundColor: palette.secondary,
+    },
+    outline: {
+      backgroundColor: palette.canvas,
+      borderColor: palette.ink,
+      borderWidth: 1.5,
+    },
+    dark: {
+      backgroundColor: palette.brandBlack,
+    },
+    whatsapp: {
+      backgroundColor: palette.whatsapp,
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+    pressed: {
+      opacity: 0.92,
+    },
+    primaryPressed: {
+      backgroundColor: palette.primaryPressed,
+    },
+    darkPressed: {
+      opacity: 0.88,
+    },
+    whatsappPressed: {
+      backgroundColor: palette.whatsappPressed,
+    },
+    label: {
+      color: palette.onPrimary,
+      fontFamily: fontFamilyBold,
+      fontSize: 15,
+      fontWeight: "700",
+      letterSpacing: 0.2,
+    },
+    secondaryLabel: {
+      color: palette.ink,
+    },
+    outlineLabel: {
+      color: palette.ink,
+    },
+    darkLabel: {
+      color: palette.primary,
+    },
+    whatsappLabel: {
+      color: palette.white,
+    },
+  });
+}

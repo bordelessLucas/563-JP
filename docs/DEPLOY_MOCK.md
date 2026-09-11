@@ -6,6 +6,32 @@ Leia também: `docs/DEPLOYMENT.md`, `docs/ORDER_FLOW.md`, `.env.example`.
 
 ---
 
+## Modo demo (validação com cliente)
+
+**Estado atual desejado para APK de apresentação:** checkout 100% mock.
+
+| Param | Valor demo |
+|--------|------------|
+| `APP_ENV` | `development` ou `staging` |
+| `PAYMENT_PROVIDER` | `mock` |
+| `DELIVERY_PROVIDER` | `mock` |
+| `ENABLE_MOCK_PAYMENT` | `true` |
+
+Defaults no código (`functions/src/config.ts`): `PAYMENT_PROVIDER` e `DELIVERY_PROVIDER` já são `mock`.
+
+### Reverter para real (rápido)
+
+1. Seguir checklist em **`docs/DEPLOY_REAL.md`** (gateway implementado + Uber + Blaze).
+2. Atualizar só os **params das Cloud Functions** (não precisa rebuild do APK se `EXPO_PUBLIC_*` não mudou):
+   - `APP_ENV=production` (ou `staging` primeiro)
+   - `PAYMENT_PROVIDER=mercadopago|asaas`
+   - `DELIVERY_PROVIDER=uber_direct`
+   - `ENABLE_MOCK_PAYMENT=false`
+3. Secrets Uber via Secret Manager + redeploy functions.
+4. Para voltar ao mock em emergência (fora de production): restaurar a tabela “Modo demo” acima e redeploy.
+
+---
+
 ## Contexto (não pule)
 
 1. O app Expo já aponta para `jp-6a9d2` via `EXPO_PUBLIC_*`. **Não precisa rebuildar o APK** só para ligar o mock, se a config Firebase do APK for desse projeto.

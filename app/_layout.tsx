@@ -1,3 +1,4 @@
+import { StatusBar } from "expo-status-bar";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import {
   CormorantGaramond_600SemiBold,
@@ -11,17 +12,22 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import {
+  DarkTheme as NavDarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import "react-native-reanimated";
 
 import { AuthGate } from "@/src/components/AuthGate";
-import { colors, fontFamilyBold } from "@/src/components/theme";
+import { fontFamilyBold } from "@/src/components/theme";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { CartProvider } from "@/src/contexts/CartContext";
+import {
+  AppThemeProvider,
+  useTheme,
+} from "@/src/contexts/ThemeContext";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -30,20 +36,6 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
-
-const AppLightTheme = {
-  ...DefaultTheme,
-  dark: false,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.primary,
-    background: colors.canvas,
-    card: colors.canvas,
-    text: colors.ink,
-    border: colors.border,
-    notification: colors.accent,
-  },
-};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -69,20 +61,44 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <AppThemeProvider>
+      <RootLayoutNav />
+    </AppThemeProvider>
+  );
 }
 
 function RootLayoutNav() {
+  const { colors, isDark } = useTheme();
+
+  const navigationTheme = useMemo(
+    () => ({
+      ...(isDark ? NavDarkTheme : DefaultTheme),
+      dark: isDark,
+      colors: {
+        ...(isDark ? NavDarkTheme.colors : DefaultTheme.colors),
+        primary: colors.primary,
+        background: colors.canvas,
+        card: colors.canvas,
+        text: colors.ink,
+        border: colors.border,
+        notification: colors.primary,
+      },
+    }),
+    [colors, isDark],
+  );
+
   return (
     <AuthProvider>
       <CartProvider>
-        <ThemeProvider value={AppLightTheme}>
+        <ThemeProvider value={navigationTheme}>
+          <StatusBar style={isDark ? "light" : "dark"} />
           <AuthGate>
             <Stack
               screenOptions={{
                 headerShadowVisible: false,
                 headerStyle: { backgroundColor: colors.canvas },
-                headerTintColor: colors.primary,
+                headerTintColor: colors.ink,
                 headerTitleStyle: {
                   color: colors.ink,
                   fontFamily: fontFamilyBold,

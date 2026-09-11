@@ -1,18 +1,23 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { BrandMark } from "@/src/components/BrandMark";
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { Input } from "@/src/components/Input";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { brand } from "@/src/constants/brand";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { useAuthActions } from "@/src/hooks/useAuthActions";
 
 export function LoginScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { error, loading, login } = useAuthActions();
@@ -33,18 +38,18 @@ export function LoginScreen() {
   return (
     <Container keyboardAware scroll>
       <View style={styles.content}>
-        <View style={styles.brandMark}>
-          <Ionicons color={colors.white} name="flower-outline" size={28} />
+        <View style={styles.brandBlock}>
+          <BrandMark size={128} />
+          <Typography style={styles.eyebrow} variant="caption">
+            {brand.fullName}
+          </Typography>
+          <Typography style={styles.tagline} variant="display">
+            {brand.tagline}
+          </Typography>
+          <Typography style={styles.intro} variant="body">
+            Buquês, noivas e presentes com flores frescas em {brand.city}.
+          </Typography>
         </View>
-        <Typography style={styles.eyebrow} variant="caption">
-          Flora & Presentes
-        </Typography>
-        <Typography variant="display">
-          Flores que dizem o que você sente.
-        </Typography>
-        <Typography style={styles.intro} variant="body">
-          Entre para escolher o arranjo certo para cada momento.
-        </Typography>
 
         <View style={styles.form}>
           <Input
@@ -93,6 +98,7 @@ export function LoginScreen() {
             onPress={() => {
               void handleLogin();
             }}
+            variant="dark"
           />
         </View>
 
@@ -112,53 +118,59 @@ export function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    gap: spacing.sm,
-    justifyContent: "center",
-    paddingVertical: spacing.xl,
-  },
-  brandMark: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.xl,
-    height: 56,
-    justifyContent: "center",
-    marginBottom: spacing.md,
-    width: 56,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-  },
-  intro: {
-    color: colors.muted,
-    marginBottom: spacing.lg,
-  },
-  form: {
-    gap: spacing.md,
-  },
-  forgot: {
-    alignSelf: "flex-end",
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  error: {
-    color: colors.error,
-  },
-  registerRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    justifyContent: "center",
-    marginTop: spacing.xl,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      flex: 1,
+      gap: spacing.lg,
+      justifyContent: "center",
+      paddingVertical: spacing.xl,
+    },
+    brandBlock: {
+      alignItems: "center",
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    eyebrow: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 1.2,
+      marginTop: spacing.md,
+      textAlign: "center",
+      textTransform: "uppercase",
+    },
+    tagline: {
+      color: palette.ink,
+      textAlign: "center",
+    },
+    intro: {
+      color: palette.muted,
+      marginBottom: spacing.sm,
+      textAlign: "center",
+    },
+    form: {
+      gap: spacing.md,
+    },
+    forgot: {
+      alignSelf: "flex-end",
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    error: {
+      color: palette.error,
+    },
+    registerRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 4,
+      justifyContent: "center",
+      marginTop: spacing.md,
+    },
+    link: {
+      color: palette.ink,
+      fontWeight: "700",
+      textDecorationLine: "underline",
+    },
+  });
+}

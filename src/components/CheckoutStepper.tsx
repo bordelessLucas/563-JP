@@ -1,7 +1,10 @@
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { colors, spacing, touchTarget } from "@/src/components/theme";
+import { spacing, touchTarget } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 const STEP_LABELS = [
   "Destinatário",
@@ -16,6 +19,9 @@ type CheckoutStepperProps = {
 };
 
 export function CheckoutStepper({ step }: CheckoutStepperProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
@@ -50,55 +56,57 @@ export function CheckoutStepper({ step }: CheckoutStepperProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: touchTarget / 2,
-  },
-  stepItem: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  line: {
-    backgroundColor: colors.border,
-    flex: 1,
-    height: 1,
-    marginRight: 4,
-  },
-  lineDone: {
-    backgroundColor: colors.primary,
-  },
-  lineSpacer: {
-    flex: 1,
-  },
-  dot: {
-    backgroundColor: colors.border,
-    borderRadius: 5,
-    height: 10,
-    width: 10,
-  },
-  dotDone: {
-    backgroundColor: colors.primary,
-  },
-  dotCurrent: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderWidth: 2,
-    height: 12,
-    width: 12,
-  },
-  label: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    row: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      minHeight: touchTarget / 2,
+    },
+    stepItem: {
+      alignItems: "center",
+      flex: 1,
+      flexDirection: "row",
+      justifyContent: "center",
+    },
+    line: {
+      backgroundColor: palette.border,
+      flex: 1,
+      height: 1,
+      marginRight: 4,
+    },
+    lineDone: {
+      backgroundColor: palette.ink,
+    },
+    lineSpacer: {
+      flex: 1,
+    },
+    dot: {
+      backgroundColor: palette.border,
+      borderRadius: 5,
+      height: 10,
+      width: 10,
+    },
+    dotDone: {
+      backgroundColor: palette.ink,
+    },
+    dotCurrent: {
+      backgroundColor: palette.primary,
+      borderColor: palette.ink,
+      borderWidth: 2,
+      height: 12,
+      width: 12,
+    },
+    label: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+  });
+}

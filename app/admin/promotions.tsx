@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -7,8 +7,9 @@ import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { Input } from "@/src/components/Input";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   createBanner,
   listAllBanners,
@@ -16,6 +17,7 @@ import {
 } from "@/src/services/banner.service";
 import { listAllCategories } from "@/src/services/category.service";
 import { listAllProducts } from "@/src/services/product.service";
+import type { ThemeColors } from "@/src/theme/types";
 import {
   Banner,
   BannerDestination,
@@ -51,6 +53,8 @@ const emptyForm = (order = 1): FormState => ({
 });
 
 export default function AdminPromotionsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -384,77 +388,79 @@ export default function AdminPromotionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    marginBottom: spacing.md,
-  },
-  form: {
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  chip: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  chipOn: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.primary,
-  },
-  chipLabel: {
-    fontWeight: "700",
-  },
-  chipLabelOn: {
-    color: colors.primary,
-  },
-  switchRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between",
-    minHeight: 44,
-  },
-  switchCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  section: {
-    fontWeight: "700",
-    marginTop: spacing.xl,
-  },
-  list: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  copy: {
-    flex: 1,
-    gap: 4,
-  },
-  name: {
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    title: {
+      marginBottom: spacing.md,
+    },
+    form: {
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    chips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    chip: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      justifyContent: "center",
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    chipOn: {
+      backgroundColor: palette.secondary,
+      borderColor: palette.primary,
+    },
+    chipLabel: {
+      fontWeight: "700",
+    },
+    chipLabelOn: {
+      color: palette.primary,
+    },
+    switchRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.md,
+      justifyContent: "space-between",
+      minHeight: 44,
+    },
+    switchCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    section: {
+      fontWeight: "700",
+      marginTop: spacing.xl,
+    },
+    list: {
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    row: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    copy: {
+      flex: 1,
+      gap: 4,
+    },
+    name: {
+      fontWeight: "700",
+    },
+  });
+}

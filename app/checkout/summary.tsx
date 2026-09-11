@@ -1,5 +1,5 @@
 import { Href, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -7,10 +7,12 @@ import { CheckoutStepper } from "@/src/components/CheckoutStepper";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { createDeliveryQuote } from "@/src/services/backend.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { formatCurrency } from "@/src/utils/format";
 
 function formatDateLabel(value: string): string {
@@ -22,6 +24,8 @@ function formatDateLabel(value: string): string {
 export default function CheckoutSummaryScreen() {
   const router = useRouter();
   const { cart, refreshCart, saveCheckout } = useCart();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const checkout = cart?.checkout;
   const address = checkout?.address;
   const recipient = checkout?.recipient;
@@ -284,77 +288,79 @@ export default function CheckoutSummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    marginBottom: 0,
-  },
-  quoteErrorBlock: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  cardHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: spacing.xs,
-  },
-  cardTitle: {
-    fontWeight: "700",
-  },
-  editLink: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  value: {
-    fontWeight: "700",
-  },
-  itemsList: {
-    gap: spacing.md,
-  },
-  itemRow: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-  },
-  itemCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  totals: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  totalRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  totalLabel: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-  totalValue: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  actions: {
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      marginBottom: 0,
+    },
+    quoteErrorBlock: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.lg,
+    },
+    cardHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: spacing.xs,
+    },
+    cardTitle: {
+      fontWeight: "700",
+    },
+    editLink: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    value: {
+      fontWeight: "700",
+    },
+    itemsList: {
+      gap: spacing.md,
+    },
+    itemRow: {
+      alignItems: "flex-start",
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+    },
+    itemCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    totals: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.md,
+      padding: spacing.lg,
+    },
+    totalRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    totalLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    totalValue: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    actions: {
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+  });
+}

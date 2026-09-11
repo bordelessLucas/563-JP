@@ -1,14 +1,16 @@
 import { Href, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { getOrderById } from "@/src/services/order.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
 import {
@@ -18,6 +20,8 @@ import {
 
 export default function CheckoutSuccessScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { orderId, orderNumber } = useLocalSearchParams<{
     orderId?: string;
     orderNumber?: string;
@@ -132,35 +136,37 @@ export default function CheckoutSuccessScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    marginBottom: 0,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  cardTitle: {
-    fontWeight: "700",
-  },
-  number: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  total: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginTop: spacing.xs,
-  },
-  actions: {
-    gap: spacing.md,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      marginBottom: 0,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.lg,
+    },
+    cardTitle: {
+      fontWeight: "700",
+    },
+    number: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    total: {
+      color: palette.primary,
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    actions: {
+      gap: spacing.md,
+    },
+  });
+}

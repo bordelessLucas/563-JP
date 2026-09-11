@@ -1,5 +1,5 @@
 import { Href, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -7,8 +7,9 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   markOrderPreparing,
   markOrderReady,
@@ -17,6 +18,7 @@ import {
   retryDelivery,
 } from "@/src/services/backend.service";
 import { listAllOrders } from "@/src/services/order.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
 import {
@@ -30,6 +32,8 @@ import {
 
 export default function AdminOrdersScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -271,48 +275,50 @@ export default function AdminOrdersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    marginBottom: spacing.md,
-  },
-  list: {
-    gap: spacing.md,
-    marginTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  orderNumber: {
-    flex: 1,
-    fontWeight: "700",
-  },
-  badge: {
-    backgroundColor: colors.secondary,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  badgeLabel: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  total: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    title: {
+      marginBottom: spacing.md,
+    },
+    list: {
+      gap: spacing.md,
+      marginTop: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.lg,
+    },
+    header: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    orderNumber: {
+      flex: 1,
+      fontWeight: "700",
+    },
+    badge: {
+      backgroundColor: palette.secondary,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    badgeLabel: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    total: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    link: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+  });
+}

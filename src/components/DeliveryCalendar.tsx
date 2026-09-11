@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { colors, radius, spacing, touchTarget } from "@/src/components/theme";
+import { radius, spacing, touchTarget } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
@@ -54,6 +56,8 @@ export function DeliveryCalendar({
   minDate,
   maxDate,
 }: DeliveryCalendarProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const minimum = startOfDay(minDate);
   const maximum = startOfDay(maxDate);
   const initialMonth = parseDateInput(selectedDate) ?? minimum;
@@ -205,80 +209,82 @@ export function DeliveryCalendar({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: spacing.xs,
-  },
-  navButton: {
-    alignItems: "center",
-    height: touchTarget,
-    justifyContent: "center",
-    width: touchTarget,
-  },
-  navDisabled: {
-    opacity: 0.45,
-  },
-  monthLabel: {
-    color: colors.ink,
-    fontWeight: "700",
-    textTransform: "capitalize",
-  },
-  weekRow: {
-    flexDirection: "row",
-  },
-  weekday: {
-    color: colors.muted,
-    flex: 1,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    rowGap: spacing.sm,
-  },
-  dayCell: {
-    alignItems: "center",
-    height: 44,
-    justifyContent: "center",
-    width: `${100 / 7}%`,
-  },
-  dayInner: {
-    alignItems: "center",
-    borderRadius: radius.md,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  daySelected: {
-    backgroundColor: colors.primary,
-  },
-  dayToday: {
-    borderColor: colors.primary,
-    borderWidth: 1,
-  },
-  dayDisabled: {
-    opacity: 0.35,
-  },
-  dayLabel: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-  dayLabelSelected: {
-    color: colors.white,
-  },
-  dayLabelDisabled: {
-    color: colors.muted,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    header: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: spacing.xs,
+    },
+    navButton: {
+      alignItems: "center",
+      height: touchTarget,
+      justifyContent: "center",
+      width: touchTarget,
+    },
+    navDisabled: {
+      opacity: 0.45,
+    },
+    monthLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+      textTransform: "capitalize",
+    },
+    weekRow: {
+      flexDirection: "row",
+    },
+    weekday: {
+      color: palette.muted,
+      flex: 1,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      rowGap: spacing.sm,
+    },
+    dayCell: {
+      alignItems: "center",
+      height: 44,
+      justifyContent: "center",
+      width: `${100 / 7}%`,
+    },
+    dayInner: {
+      alignItems: "center",
+      borderRadius: radius.md,
+      height: 36,
+      justifyContent: "center",
+      width: 36,
+    },
+    daySelected: {
+      backgroundColor: palette.primary,
+    },
+    dayToday: {
+      borderColor: palette.primary,
+      borderWidth: 1,
+    },
+    dayDisabled: {
+      opacity: 0.35,
+    },
+    dayLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    dayLabelSelected: {
+      color: palette.onPrimary,
+    },
+    dayLabelDisabled: {
+      color: palette.muted,
+    },
+  });
+}

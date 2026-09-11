@@ -14,11 +14,15 @@ import {
 import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { LoadingState } from "@/src/components/LoadingState";
+import { BrandMark } from "@/src/components/BrandMark";
 import { ProductCard } from "@/src/components/ProductCard";
 import { PromoModal } from "@/src/components/PromoModal";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { brand } from "@/src/constants/brand";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import {
   getActivePromoModal,
   listActiveHeroBanners,
@@ -47,6 +51,8 @@ const CATALOG_PROMO_HREF = {
 export function HomeScreen() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,16 +154,19 @@ export function HomeScreen() {
       ) : null}
 
       <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <Typography style={styles.brand} variant="caption">
-            Flora & Presentes
-          </Typography>
-          <Typography variant="title">
-            {greetingForNow()}, {firstName}
-          </Typography>
-          <Typography style={styles.headerSub} variant="caption">
-            Arranjos e presentes com cuidado artesanal.
-          </Typography>
+        <View style={styles.headerBrand}>
+          <BrandMark size={96} variant="hero" />
+          <View style={styles.headerCopy}>
+            <Typography style={styles.brand} variant="caption">
+              {brand.fullName}
+            </Typography>
+            <Typography variant="title">
+              {greetingForNow()}, {firstName}
+            </Typography>
+            <Typography style={styles.headerSub} variant="caption">
+              {brand.tagline}
+            </Typography>
+          </View>
         </View>
         <Pressable
           accessibilityLabel="Abrir perfil"
@@ -165,7 +174,7 @@ export function HomeScreen() {
           onPress={() => router.push("/(tabs)/profile")}
           style={styles.profileButton}
         >
-          <Ionicons color={colors.primary} name="person-outline" size={20} />
+          <Ionicons color={colors.ink} name="person-outline" size={20} />
         </Pressable>
       </View>
 
@@ -322,7 +331,11 @@ export function HomeScreen() {
                   {weekPromo.title}
                 </Typography>
                 {weekPromo.body ? (
-                  <Typography numberOfLines={2} variant="caption">
+                  <Typography
+                    numberOfLines={2}
+                    style={styles.weekPromoBody}
+                    variant="caption"
+                  >
                     {weekPromo.body}
                   </Typography>
                 ) : null}
@@ -345,36 +358,44 @@ export function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
   header: {
     alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing.xl,
   },
+  headerBrand: {
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingRight: spacing.sm,
+  },
   headerCopy: {
     flex: 1,
-    gap: 6,
-    paddingRight: spacing.md,
+    gap: 4,
+    justifyContent: "center",
   },
   brand: {
-    color: colors.primary,
+    color: palette.ink,
     fontWeight: "700",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   headerSub: {
     letterSpacing: 0.1,
-    maxWidth: 280,
+    maxWidth: 260,
   },
   profileButton: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
     borderRadius: radius.xl,
     borderWidth: 1,
     height: 44,
     justifyContent: "center",
+    marginTop: 4,
     width: 44,
   },
   banner: {
@@ -389,7 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   bannerOverlay: {
-    backgroundColor: colors.overlay,
+    backgroundColor: palette.overlay,
     flex: 1,
     gap: spacing.sm,
     justifyContent: "flex-end",
@@ -397,19 +418,19 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   bannerEyebrow: {
-    color: "rgba(255,255,255,0.82)",
+    color: palette.primary,
     fontWeight: "700",
     letterSpacing: 1.4,
     textTransform: "uppercase",
   },
   bannerTitle: {
-    color: colors.white,
+    color: palette.white,
     maxWidth: "92%",
   },
   bannerCta: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: colors.white,
+    backgroundColor: palette.primary,
     borderRadius: radius.md,
     flexDirection: "row",
     gap: 6,
@@ -419,7 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   bannerCtaLabel: {
-    color: colors.primary,
+    color: palette.onPrimary,
     fontWeight: "700",
     letterSpacing: 0.4,
   },
@@ -430,12 +451,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    color: colors.ink,
+    color: palette.ink,
     fontWeight: "600",
   },
   link: {
-    color: colors.primary,
+    color: palette.ink,
     fontWeight: "700",
+    textDecorationLine: "underline",
   },
   categoryShell: {
     height: 108,
@@ -457,13 +479,13 @@ const styles = StyleSheet.create({
     width: 76,
   },
   categoryImage: {
-    backgroundColor: colors.secondary,
+    backgroundColor: palette.secondary,
     borderRadius: 38,
     height: 76,
     width: 76,
   },
   categoryLabel: {
-    color: colors.ink,
+    color: palette.ink,
     fontWeight: "600",
     letterSpacing: 0,
     textAlign: "center",
@@ -477,15 +499,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   weekPromo: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: palette.brandBlack,
     borderRadius: radius.lg,
-    borderWidth: 1,
     marginBottom: spacing.xl,
     overflow: "hidden",
   },
   weekPromoImage: {
-    backgroundColor: colors.secondary,
+    backgroundColor: "#1A1A1A",
     height: 148,
     width: "100%",
   },
@@ -494,19 +514,22 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   weekPromoEyebrow: {
-    color: colors.accent,
+    color: palette.primary,
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
   },
   weekPromoTitle: {
-    color: colors.ink,
+    color: palette.white,
     fontWeight: "600",
+  },
+  weekPromoBody: {
+    color: "rgba(255,255,255,0.78)",
   },
   weekPromoCta: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: colors.primary,
+    backgroundColor: palette.primary,
     borderRadius: radius.md,
     flexDirection: "row",
     gap: 6,
@@ -516,7 +539,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   weekPromoCtaLabel: {
-    color: colors.white,
+    color: palette.onPrimary,
     fontWeight: "700",
   },
 });
+}

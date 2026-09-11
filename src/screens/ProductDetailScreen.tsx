@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,15 +11,11 @@ import { ImageGallery } from "@/src/components/ImageGallery";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { StockBadge } from "@/src/components/StockBadge";
-import {
-  colors,
-  fontFamily,
-  radius,
-  spacing,
-  type,
-} from "@/src/components/theme";
+import { fontFamily, radius, spacing, type } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { listActiveCategories } from "@/src/services/category.service";
 import { getProductById } from "@/src/services/product.service";
 import { Product, productEffectivePrice, hasPromoDiscount, isProductOnPromo } from "@/src/types/catalog";
@@ -28,6 +24,8 @@ import { formatCurrency } from "@/src/utils/format";
 export function ProductDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { addItem } = useCart();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
@@ -196,7 +194,7 @@ export function ProductDetailScreen() {
                     (quantity <= 1 || unavailable) && styles.qtyDisabled,
                   ]}
                 >
-                  <Ionicons color={colors.primary} name="remove" size={18} />
+                  <Ionicons color={colors.ink} name="remove" size={18} />
                 </Pressable>
                 <Typography style={styles.qtyValue} variant="subtitle">
                   {quantity}
@@ -207,7 +205,7 @@ export function ProductDetailScreen() {
                   onPress={() => setQuantity((value) => value + 1)}
                   style={[styles.qtyButton, unavailable && styles.qtyDisabled]}
                 >
-                  <Ionicons color={colors.primary} name="add" size={18} />
+                  <Ionicons color={colors.ink} name="add" size={18} />
                 </Pressable>
                 <Typography style={styles.qtyHint} variant="caption">
                   Subtotal {formatCurrency(totalPreview)}
@@ -246,7 +244,9 @@ export function ProductDetailScreen() {
             ]}
           >
             <View style={styles.ctaCopy}>
-              <Typography variant="caption">Total estimado</Typography>
+              <Typography style={styles.ctaLabel} variant="caption">
+                Total estimado
+              </Typography>
               <Typography style={styles.ctaPrice} variant="subtitle">
                 {formatCurrency(totalPreview)}
               </Typography>
@@ -280,133 +280,138 @@ export function ProductDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    backgroundColor: colors.canvas,
-    flex: 1,
-  },
-  backButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: "center",
-    left: spacing.lg,
-    position: "absolute",
-    width: 44,
-    zIndex: 2,
-  },
-  galleryWrap: {
-    marginHorizontal: -spacing.lg,
-    marginTop: -spacing.lg,
-  },
-  content: {
-    gap: spacing.sm,
-    paddingTop: spacing.lg,
-  },
-  price: {
-    color: colors.primary,
-  },
-  priceBlock: {
-    gap: 2,
-  },
-  priceOld: {
-    color: colors.muted,
-    letterSpacing: 0,
-    textDecorationLine: "line-through",
-  },
-  pricePromo: {
-    color: colors.accent,
-  },
-  promoPill: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.softAccent,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  promoPillLabel: {
-    color: colors.accent,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  sectionLabel: {
-    color: colors.muted,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    marginTop: spacing.md,
-    textTransform: "uppercase",
-  },
-  description: {
-    color: colors.ink,
-    letterSpacing: 0,
-  },
-  quantityRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  qtyButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  qtyDisabled: {
-    opacity: 0.4,
-  },
-  qtyValue: {
-    color: colors.ink,
-    fontWeight: "700",
-    minWidth: 24,
-    textAlign: "center",
-  },
-  qtyHint: {
-    color: colors.muted,
-  },
-  messageInput: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    color: colors.ink,
-    fontFamily,
-    fontSize: type.body,
-    minHeight: 88,
-    padding: spacing.md,
-    textAlignVertical: "top",
-  },
-  bottomSpacer: {
-    height: 148,
-  },
-  ctaBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  ctaCopy: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  ctaPrice: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  ctaActions: {
-    gap: spacing.sm,
-    width: "100%",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    root: {
+      backgroundColor: palette.canvas,
+      flex: 1,
+    },
+    backButton: {
+      alignItems: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      height: 44,
+      justifyContent: "center",
+      left: spacing.lg,
+      position: "absolute",
+      width: 44,
+      zIndex: 2,
+    },
+    galleryWrap: {
+      marginHorizontal: -spacing.lg,
+      marginTop: -spacing.lg,
+    },
+    content: {
+      gap: spacing.sm,
+      paddingTop: spacing.lg,
+    },
+    price: {
+      color: palette.ink,
+    },
+    priceBlock: {
+      gap: 2,
+    },
+    priceOld: {
+      color: palette.muted,
+      letterSpacing: 0,
+      textDecorationLine: "line-through",
+    },
+    pricePromo: {
+      color: palette.ink,
+    },
+    promoPill: {
+      alignSelf: "flex-start",
+      backgroundColor: palette.brandBlack,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    promoPillLabel: {
+      color: palette.primary,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    sectionLabel: {
+      color: palette.muted,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      marginTop: spacing.md,
+      textTransform: "uppercase",
+    },
+    description: {
+      color: palette.ink,
+      letterSpacing: 0,
+    },
+    quantityRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    qtyButton: {
+      alignItems: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.ink,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      height: 44,
+      justifyContent: "center",
+      width: 44,
+    },
+    qtyDisabled: {
+      opacity: 0.4,
+    },
+    qtyValue: {
+      color: palette.ink,
+      fontWeight: "700",
+      minWidth: 24,
+      textAlign: "center",
+    },
+    qtyHint: {
+      color: palette.muted,
+    },
+    messageInput: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      color: palette.ink,
+      fontFamily,
+      fontSize: type.body,
+      minHeight: 88,
+      padding: spacing.md,
+      textAlignVertical: "top",
+    },
+    bottomSpacer: {
+      height: 148,
+    },
+    ctaBar: {
+      backgroundColor: palette.surface,
+      borderTopColor: palette.border,
+      borderTopWidth: 1,
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+    },
+    ctaCopy: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    ctaLabel: {
+      color: palette.muted,
+    },
+    ctaPrice: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    ctaActions: {
+      gap: spacing.sm,
+      width: "100%",
+    },
+  });
+}

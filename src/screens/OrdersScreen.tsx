@@ -1,5 +1,5 @@
 import { Href, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -7,10 +7,12 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { listOrdersByCustomer } from "@/src/services/order.service";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
@@ -22,6 +24,8 @@ import {
 
 export function OrdersScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user } = useAuth();
   const { itemCount } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -157,25 +161,25 @@ export function OrdersScreen() {
                   )}
                   <View style={styles.cardBody}>
                     <View style={styles.cardHeader}>
-                      <Typography style={styles.orderNumber} variant="body">
-                        {order.orderNumber}
+                    <Typography style={styles.orderNumber} variant="body">
+                      {order.orderNumber}
+                    </Typography>
+                    <View style={styles.badge}>
+                      <Typography style={styles.badgeLabel} variant="caption">
+                        {orderStatusLabel(order.orderStatus)}
                       </Typography>
-                      <View style={styles.badge}>
-                        <Typography style={styles.badgeLabel} variant="caption">
-                          {orderStatusLabel(order.orderStatus)}
-                        </Typography>
-                      </View>
                     </View>
-                    <Typography numberOfLines={1} variant="caption">
-                      {itemSummary}
-                    </Typography>
-                    <Typography variant="caption">
-                      {formatDateTimeLabel(order.createdAt)}
-                    </Typography>
-                    <Typography variant="caption">
-                      Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
-                      {order.deliveryPeriodLabel}
-                    </Typography>
+                  </View>
+                  <Typography style={styles.meta} numberOfLines={1} variant="caption">
+                    {itemSummary}
+                  </Typography>
+                  <Typography style={styles.meta} variant="caption">
+                    {formatDateTimeLabel(order.createdAt)}
+                  </Typography>
+                  <Typography style={styles.meta} variant="caption">
+                    Entrega {formatDateLabel(order.deliveryDate)} ·{" "}
+                    {order.deliveryPeriodLabel}
+                  </Typography>
                     <Typography style={styles.total} variant="body">
                       {formatCurrency(order.total)}
                     </Typography>
@@ -190,79 +194,85 @@ export function OrdersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  eyebrow: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  title: {
-    marginBottom: spacing.lg,
-  },
-  notice: {
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  retry: {
-    marginTop: spacing.xs,
-  },
-  list: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-  },
-  cardPressed: {
-    opacity: 0.92,
-  },
-  cardRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  thumb: {
-    backgroundColor: colors.secondary,
-    borderRadius: radius.md,
-    height: 72,
-    width: 72,
-  },
-  thumbFallback: {
-    backgroundColor: colors.softAccent,
-  },
-  cardBody: {
-    flex: 1,
-    gap: 4,
-  },
-  cardHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-  },
-  orderNumber: {
-    flex: 1,
-    fontWeight: "700",
-    letterSpacing: 0,
-  },
-  badge: {
-    backgroundColor: colors.secondary,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  badgeLabel: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  total: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    eyebrow: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+    },
+    title: {
+      marginBottom: spacing.lg,
+    },
+    notice: {
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    retry: {
+      marginTop: spacing.xs,
+    },
+    list: {
+      gap: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      padding: spacing.md,
+    },
+    cardPressed: {
+      opacity: 0.92,
+    },
+    cardRow: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    thumb: {
+      backgroundColor: palette.secondary,
+      borderRadius: radius.md,
+      height: 72,
+      width: 72,
+    },
+    thumbFallback: {
+      backgroundColor: palette.softAccent,
+    },
+    cardBody: {
+      flex: 1,
+      gap: 4,
+    },
+    cardHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+    },
+    orderNumber: {
+      color: palette.ink,
+      flex: 1,
+      fontWeight: "700",
+      letterSpacing: 0,
+    },
+    badge: {
+      backgroundColor: palette.secondary,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    badgeLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 0.2,
+    },
+    meta: {
+      color: palette.muted,
+    },
+    total: {
+      color: palette.ink,
+      fontWeight: "700",
+      marginTop: 2,
+    },
+  });
+}

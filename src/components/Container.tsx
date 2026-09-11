@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useMemo } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,7 +10,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, spacing } from "@/src/components/theme";
+import { spacing } from "@/src/components/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 type ContainerProps = PropsWithChildren<ViewProps> & {
   scroll?: boolean;
@@ -30,6 +32,9 @@ export function Container({
   style,
   ...props
 }: ContainerProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[
@@ -67,30 +72,36 @@ export function Container({
   );
 
   return (
-    <SafeAreaView {...props} edges={["top", "left", "right"]} style={[styles.safeArea, style]}>
+    <SafeAreaView
+      {...props}
+      edges={["top", "left", "right"]}
+      style={[styles.safeArea, style]}
+    >
       {keyboardContent}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.canvas,
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  noPadding: {
-    padding: 0,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      backgroundColor: palette.canvas,
+      flex: 1,
+    },
+    flex: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.lg,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      padding: spacing.lg,
+      paddingBottom: spacing.xxl,
+    },
+    noPadding: {
+      padding: 0,
+    },
+  });
+}

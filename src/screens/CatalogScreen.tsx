@@ -12,8 +12,10 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { LoadingState } from "@/src/components/LoadingState";
 import { ProductCard } from "@/src/components/ProductCard";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { listActiveCategories } from "@/src/services/category.service";
 import { listActiveProducts } from "@/src/services/product.service";
 import { Category, isProductOnPromo, Product } from "@/src/types/catalog";
@@ -28,6 +30,8 @@ type CatalogFilter = "all" | "promo" | string;
 
 export function CatalogScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{
     categoryId?: string | string[];
     filter?: string | string[];
@@ -263,86 +267,88 @@ export function CatalogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  eyebrow: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  title: {
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    marginBottom: spacing.lg,
-  },
-  filtersShell: {
-    height: 52,
-    marginBottom: spacing.md,
-    marginHorizontal: -CONTENT_PADDING,
-  },
-  filtersContent: {
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: CONTENT_PADDING,
-  },
-  chip: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexShrink: 0,
-    height: 40,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipPromo: {
-    backgroundColor: colors.softAccent,
-    borderColor: colors.softAccent,
-  },
-  chipPromoActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  chipLabel: {
-    color: colors.ink,
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
-  chipPromoLabel: {
-    color: colors.accent,
-  },
-  chipLabelActive: {
-    color: colors.white,
-  },
-  resultRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-    marginBottom: spacing.md,
-    minHeight: 24,
-  },
-  resultLabel: {
-    flex: 1,
-    flexShrink: 1,
-  },
-  clear: {
-    color: colors.primary,
-    flexShrink: 0,
-    fontWeight: "700",
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: GRID_GAP,
-    paddingBottom: spacing.xl,
-    width: "100%",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    eyebrow: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+    },
+    title: {
+      marginBottom: spacing.xs,
+    },
+    subtitle: {
+      marginBottom: spacing.lg,
+    },
+    filtersShell: {
+      height: 52,
+      marginBottom: spacing.md,
+      marginHorizontal: -CONTENT_PADDING,
+    },
+    filtersContent: {
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingHorizontal: CONTENT_PADDING,
+    },
+    chip: {
+      alignItems: "center",
+      alignSelf: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flexShrink: 0,
+      height: 40,
+      justifyContent: "center",
+      paddingHorizontal: spacing.md,
+    },
+    chipActive: {
+      backgroundColor: palette.brandBlack,
+      borderColor: palette.brandBlack,
+    },
+    chipPromo: {
+      backgroundColor: palette.secondary,
+      borderColor: palette.primary,
+    },
+    chipPromoActive: {
+      backgroundColor: palette.brandBlack,
+      borderColor: palette.brandBlack,
+    },
+    chipLabel: {
+      color: palette.ink,
+      fontWeight: "600",
+      letterSpacing: 0.2,
+    },
+    chipPromoLabel: {
+      color: palette.ink,
+    },
+    chipLabelActive: {
+      color: palette.primary,
+    },
+    resultRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+      marginBottom: spacing.md,
+      minHeight: 24,
+    },
+    resultLabel: {
+      flex: 1,
+      flexShrink: 1,
+    },
+    clear: {
+      color: palette.ink,
+      flexShrink: 0,
+      fontWeight: "700",
+    },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: GRID_GAP,
+      paddingBottom: spacing.xl,
+      width: "100%",
+    },
+  });
+}

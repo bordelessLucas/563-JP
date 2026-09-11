@@ -8,12 +8,14 @@ import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { Input } from "@/src/components/Input";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { createAddress, listAddresses } from "@/src/services/address.service";
 import { formatCep, lookupCep, onlyDigits } from "@/src/services/cep.service";
+import type { ThemeColors } from "@/src/theme/types";
 import {
   createEmptyAddress,
   DeliveryAddressDraft,
@@ -24,6 +26,8 @@ export default function CheckoutAddressScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { cart, saveCheckout } = useCart();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [address, setAddress] = useState<DeliveryAddressDraft>(createEmptyAddress());
@@ -375,48 +379,50 @@ export default function CheckoutAddressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    marginBottom: spacing.md,
-  },
-  savedList: {
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-    marginTop: spacing.lg,
-  },
-  savedCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: 4,
-    padding: spacing.md,
-  },
-  savedCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.secondary,
-  },
-  savedTitle: {
-    fontWeight: "700",
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginTop: spacing.xs,
-  },
-  form: {
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  row: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  half: {
-    flex: 1,
-  },
-  success: {
-    color: colors.success,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    title: {
+      marginBottom: spacing.md,
+    },
+    savedList: {
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+      marginTop: spacing.lg,
+    },
+    savedCard: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: 4,
+      padding: spacing.md,
+    },
+    savedCardActive: {
+      borderColor: palette.primary,
+      backgroundColor: palette.secondary,
+    },
+    savedTitle: {
+      fontWeight: "700",
+    },
+    link: {
+      color: palette.primary,
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    form: {
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    row: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    half: {
+      flex: 1,
+    },
+    success: {
+      color: palette.success,
+      fontWeight: "700",
+    },
+  });
+}

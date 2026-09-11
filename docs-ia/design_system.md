@@ -1,124 +1,75 @@
-# Design System
+# Design System — Floricultura Chuva de Ouro
 
 ## Status
 
-**Provisório para MVP**, aprovado para desenvolvimento até a floricultura disponibilizar logo e identidade oficial. Valores abaixo podem ser atualizados sem mudar a estrutura de tokens.
+Identidade oficial aplicada a partir da logo fornecida e referências do site
+[chuvadeourofloricultura.com.br](https://www.chuvadeourofloricultura.com.br/).
+Layout do site (Lovable) **não** é padrão de UI do app — só marca, tom e dados de contato.
 
-Aplicado no código (`src/components/theme.ts`) e usado nas telas do MVP-0–3 (incluindo pass de UI/UX de 2026-09-04). Não tratar este tema como identidade final da marca.
+## Marca
+
+- Nome curto: **Chuva de Ouro**
+- Nome completo: **Floricultura Chuva de Ouro**
+- Tagline: *Entregamos sentimentos, não apenas flores.*
+- Cidade: Anápolis-GO
+- Logos (objetos separados, sem merge):
+  - Dark: `assets/images/logo-chuva-de-ouro.png` (fundo preto)
+  - Light: `assets/images/logo-chuva-de-ouro-light.png` (fundo branco; borda fina na imagem no light)
+- Tokens de marca em `src/constants/brand.ts`
+- Temas em `src/theme/light.ts` e `src/theme/dark.ts` — paletas **independentes**
+- Runtime: `AppThemeProvider` + `useTheme()` — preferência **Sistema / Claro / Escuro** (Perfil → Aparência), persistida; padrão segue o SO (`userInterfaceStyle: automatic`)
 
 ## Princípios
 
 - Mobile-first, comércio de flores e presentes.
-- Clareza de valores, fotos em destaque e poucos passos no checkout.
-- Feedback visual explícito (loading, erro, sucesso, vazio).
-- Status de pedido e entrega visíveis e separados.
-- Evitar navegação profunda.
+- Alto contraste preto / branco / amarelo-dourado.
+- Amarelo da logo como cor de ação e marca; preto para peso e elegância.
+- Fotos de produto em destaque; UI clean, pouca sombra, bordas suaves.
+- Serif nos títulos (Cormorant), sans no corpo (DM Sans).
+- Nunca misturar tokens light/dark no mesmo objeto de estilo.
 
-## Marca provisória
+## Temas
 
-- Nome de trabalho no app: **Flora & Presentes** (substituir pelo nome oficial quando disponível).
-- Logo: ícone floral genérico até o cliente enviar o arquivo oficial.
-- Tom: botânico, fresco, acolhedor — sem parecer “template genérico de floricultura”.
-
-## Paleta de Cores (provisória)
+### Light — branco + amarelo/dourado
 
 | Token | Hex | Uso |
 |-------|-----|-----|
-| `ink` | `#1C2B26` | Texto principal |
-| `muted` | `#5F6F68` | Texto secundário |
-| `canvas` | `#F5F7F6` | Fundo de tela |
-| `surface` | `#FFFFFF` | Superfícies / cards de interação |
-| `primary` | `#1F4D3A` | Ações principais, marca |
-| `primaryPressed` | `#16382B` | Estado pressionado |
-| `secondary` | `#E3EDE8` | Fundos suaves / chips |
-| `border` | `#D0DCD5` | Bordas e divisores |
-| `accent` | `#C45B7A` | Destaque floral / promoção |
-| `softAccent` | `#F7E8EE` | Fundo de destaque leve |
-| `success` | `#2F7D57` | Sucesso / confirmação |
-| `warning` | `#C48A2A` | Atenção |
-| `error` | `#B33A45` | Erro |
-| `white` | `#FFFFFF` | Texto sobre primary |
+| `canvas` / `surface` | `#F7F7F5` / `#FFFFFF` | Fundo / cards |
+| `ink` | `#0A0A0A` | Texto |
+| `primary` | `#F0C000` | Ação / marca |
+| `logoBackdrop` / `logoBorder` | `#FFFFFF` / `#0A0A0A` | Marca |
 
-## Tipografia (provisória)
+### Dark — preto + amarelo/dourado
 
-- iOS: `Avenir Next`
-- Android / default: `sans-serif`
-- Pesos: regular (400) e bold (700)
+| Token | Hex | Uso |
+|-------|-----|-----|
+| `canvas` / `surface` | `#0A0A0A` / `#161616` | Fundo / cards |
+| `ink` | `#F5F5F5` | Texto |
+| `primary` | `#F0C000` | Ação / marca |
+| `logoBackdrop` / `logoBorder` | `#000000` / `#F0C000` | Marca |
 
-| Token | Tamanho | Uso |
-|-------|---------|-----|
-| `display` | 32 | Títulos de entrada / hero de seção |
-| `title` | 25 | Títulos de tela |
-| `subtitle` | 18 | Apoio / seções |
-| `body` | 16 | Corpo e formulários |
-| `caption` | 13 | Labels auxiliares, metadados |
+### Compartilhado de marca
 
-## Espaçamento
+| Token | Hex | Uso |
+|-------|-----|-----|
+| `primary` / `accent` | `#F0C000` / `#FFD200` | Ação e destaque |
+| `whatsapp` | `#25D366` | Contato WhatsApp da loja |
 
-| Token | Valor |
-|-------|-------|
-| `xs` | 8 |
-| `sm` | 12 |
-| `md` | 16 |
-| `lg` | 24 |
-| `xl` | 32 |
-| `xxl` | 48 |
+`BrandMark`: `badge` (login/perfil) · `hero` (home, logo ampla)
+
+## Tipografia
+
+- Display / title: Cormorant Garamond
+- Body / UI: DM Sans
+- Escala: `display` 34 · `title` 26 · `subtitle` 17 · `body` 16 · `caption` 12
 
 ## Forma
 
-| Token | Valor | Uso |
-|-------|-------|-----|
-| `radius.sm` | 8 | Inputs pequenos / tags |
-| `radius.md` | 14 | Botões / inputs |
-| `radius.lg` | 18 | Blocos / banners |
-| `radius.xl` | 24 | Modais / sheets |
-| Toque mínimo | 44 | Botões e ícones clicáveis |
+- `radius.md` 12 · `lg` 16 · `xl` 24
+- Toque mínimo 44
+- Elevação leve só quando necessário; preferir borda
 
-Elevação: preferir borda + superfície clara; sombra leve só quando necessário para hierarquia.
+## Componentes
 
-## Componentes-base confirmados no código
-
-- `Button` (`primary` | `secondary` | `outline`)
-- `Input`
-- `Typography`
-- `Container`
-
-Novos componentes do MVP devem reutilizar esses tokens (`colors`, `spacing`, `type`, `radius`, `fontFamily`).
-
-## Direção de UI do MVP
-
-Fluxo visual:
-
-```text
-ENCONTRAR → ESCOLHER → PERSONALIZAR → ENTREGAR → PAGAR → ACOMPANHAR
-```
-
-Navegação conceitual do cliente:
-
-```text
-HOME | CATÁLOGO | CARRINHO | PEDIDOS | PERFIL
-```
-
-Admin (MVP): uma tela de dashboard mockada com tópicos futuros visíveis; implementação real posterior.
-
-## Feedback e estados
-
-Padrões aplicados no MVP-1:
-
-- loading com mensagem contextual;
-- erros com ação de retry;
-- estados vazios com próximo passo claro (ex.: ir ao catálogo);
-- pull-to-refresh em Home e Catálogo;
-- prevenção de submit em formulários incompletos;
-- confirmação ao sair da conta;
-- CTA de produto com barra inferior fixa e total estimado;
-- aviso honesto quando o carrinho ainda não está disponível (sem fluxo falso).
-
-## Pendências da marca oficial
-
-Substituir quando o cliente enviar:
-
-- nome oficial;
-- logo;
-- ajustes de paleta/tipografia se divergirem deste provisório;
-- splash / ícones de loja.
+- `Button`: `primary` (amarelo), `dark` (preto + texto amarelo), `outline`, `secondary`, `whatsapp`
+- `Input`, `Typography`, `Container`, `InlineNotice`, `ProductCard`, `CheckoutStepper`

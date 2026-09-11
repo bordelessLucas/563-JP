@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { useMemo } from "react";
 import { ColorValue, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, fontFamilyMedium } from "@/src/components/theme";
+import { fontFamilyMedium } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 function CartTabIcon({
   color,
@@ -17,6 +20,8 @@ function CartTabIcon({
   size: number;
 }) {
   const { itemCount } = useCart();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBadgeStyles(colors), [colors]);
 
   return (
     <View>
@@ -36,8 +41,33 @@ function CartTabIcon({
   );
 }
 
+function createBadgeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    badge: {
+      alignItems: "center",
+      backgroundColor: colors.primary,
+      borderRadius: 9,
+      height: 18,
+      justifyContent: "center",
+      minWidth: 18,
+      paddingHorizontal: 4,
+      position: "absolute",
+      right: -10,
+      top: -4,
+    },
+    badgeLabel: {
+      color: colors.onPrimary,
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0,
+      lineHeight: 12,
+    },
+  });
+}
+
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <Tabs
@@ -125,25 +155,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 9,
-    height: 18,
-    justifyContent: "center",
-    minWidth: 18,
-    paddingHorizontal: 4,
-    position: "absolute",
-    right: -10,
-    top: -4,
-  },
-  badgeLabel: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0,
-    lineHeight: 12,
-  },
-});

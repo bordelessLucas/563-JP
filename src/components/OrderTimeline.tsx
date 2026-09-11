@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { InlineNotice } from "@/src/components/InlineNotice";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { CLIENT_TIMELINE_STEPS } from "@/src/utils/orderLabels";
 import { OrderStatus } from "@/src/types/order";
 
@@ -11,6 +14,9 @@ type OrderTimelineProps = {
 };
 
 export function OrderTimeline({ orderStatus }: OrderTimelineProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   if (orderStatus === "cancelled") {
     return (
       <InlineNotice
@@ -78,55 +84,57 @@ export function OrderTimeline({ orderStatus }: OrderTimelineProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: 0,
-  },
-  row: {
-    flexDirection: "row",
-    gap: spacing.md,
-    minHeight: 56,
-  },
-  rail: {
-    alignItems: "center",
-    width: 20,
-  },
-  dot: {
-    backgroundColor: colors.border,
-    borderRadius: radius.xl,
-    height: 14,
-    marginTop: 4,
-    width: 14,
-  },
-  dotDone: {
-    backgroundColor: colors.primary,
-  },
-  dotCurrent: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderWidth: 3,
-    height: 16,
-    width: 16,
-  },
-  line: {
-    backgroundColor: colors.border,
-    flex: 1,
-    marginVertical: 4,
-    width: 2,
-  },
-  lineDone: {
-    backgroundColor: colors.primary,
-  },
-  copy: {
-    flex: 1,
-    gap: 2,
-    paddingBottom: spacing.md,
-  },
-  label: {
-    color: colors.muted,
-  },
-  labelDone: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    list: {
+      gap: 0,
+    },
+    row: {
+      flexDirection: "row",
+      gap: spacing.md,
+      minHeight: 56,
+    },
+    rail: {
+      alignItems: "center",
+      width: 20,
+    },
+    dot: {
+      backgroundColor: palette.border,
+      borderRadius: radius.xl,
+      height: 14,
+      marginTop: 4,
+      width: 14,
+    },
+    dotDone: {
+      backgroundColor: palette.ink,
+    },
+    dotCurrent: {
+      backgroundColor: palette.primary,
+      borderColor: palette.ink,
+      borderWidth: 2,
+      height: 16,
+      width: 16,
+    },
+    line: {
+      backgroundColor: palette.border,
+      flex: 1,
+      marginVertical: 4,
+      width: 2,
+    },
+    lineDone: {
+      backgroundColor: palette.ink,
+    },
+    copy: {
+      flex: 1,
+      gap: 2,
+      paddingBottom: spacing.md,
+    },
+    label: {
+      color: palette.muted,
+    },
+    labelDone: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+  });
+}

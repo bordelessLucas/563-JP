@@ -1,12 +1,17 @@
 import { Href, Stack, useRouter } from "expo-router";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
-import { colors, spacing } from "@/src/components/theme";
+import { spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 export default function NotFoundScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <>
@@ -27,20 +32,22 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    backgroundColor: colors.canvas,
-    flex: 1,
-    gap: spacing.md,
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  title: {
-    textAlign: "center",
-  },
-  description: {
-    marginBottom: spacing.md,
-    textAlign: "center",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      alignItems: "center",
+      backgroundColor: palette.canvas,
+      flex: 1,
+      gap: spacing.md,
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    title: {
+      textAlign: "center",
+    },
+    description: {
+      marginBottom: spacing.md,
+      textAlign: "center",
+    },
+  });
+}

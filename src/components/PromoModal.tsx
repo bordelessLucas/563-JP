@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { Image, Modal, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { Banner } from "@/src/types/catalog";
 
 type PromoModalProps = {
@@ -18,6 +21,9 @@ export function PromoModal({
   onClose,
   onAction,
 }: PromoModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Modal
       animationType="fade"
@@ -69,50 +75,52 @@ export function PromoModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    alignItems: "center",
-    backgroundColor: "rgba(20, 20, 20, 0.55)",
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    maxWidth: 420,
-    overflow: "hidden",
-    width: "100%",
-  },
-  image: {
-    backgroundColor: colors.secondary,
-    height: 180,
-    width: "100%",
-  },
-  body: {
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  title: {
-    marginBottom: 0,
-  },
-  actions: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  close: {
-    minHeight: 44,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  closeLabel: {
-    color: colors.muted,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    backdrop: {
+      alignItems: "center",
+      backgroundColor: "rgba(20, 20, 20, 0.55)",
+      flex: 1,
+      justifyContent: "center",
+      padding: spacing.lg,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderRadius: radius.xl,
+      maxWidth: 420,
+      overflow: "hidden",
+      width: "100%",
+    },
+    image: {
+      backgroundColor: palette.secondary,
+      height: 180,
+      width: "100%",
+    },
+    body: {
+      gap: spacing.sm,
+      padding: spacing.lg,
+    },
+    eyebrow: {
+      color: palette.primary,
+      fontWeight: "700",
+      letterSpacing: 1,
+    },
+    title: {
+      marginBottom: 0,
+    },
+    actions: {
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    close: {
+      minHeight: 44,
+      paddingBottom: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    closeLabel: {
+      color: palette.muted,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+  });
+}

@@ -5,13 +5,17 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { Input } from "@/src/components/Input";
-import { colors, spacing } from "@/src/components/theme";
+import { spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { useAuthActions } from "@/src/hooks/useAuthActions";
 
 export function RegisterScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -112,36 +116,38 @@ export function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  back: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginBottom: spacing.lg,
-  },
-  intro: {
-    marginBottom: spacing.lg,
-  },
-  error: {
-    color: colors.error,
-  },
-  form: {
-    gap: spacing.md,
-  },
-  loginRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    justifyContent: "center",
-    marginTop: spacing.xl,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      flex: 1,
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    back: {
+      color: palette.primary,
+      fontWeight: "700",
+      marginBottom: spacing.lg,
+    },
+    intro: {
+      marginBottom: spacing.lg,
+    },
+    error: {
+      color: palette.error,
+    },
+    form: {
+      gap: spacing.md,
+    },
+    loginRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 4,
+      justifyContent: "center",
+      marginTop: spacing.xl,
+    },
+    link: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+  });
+}

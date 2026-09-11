@@ -9,10 +9,12 @@ import { DeliveryCalendar } from "@/src/components/DeliveryCalendar";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { getOperationSettings } from "@/src/services/settings.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { DeliveryPeriod } from "@/src/types/checkout";
 
 const MAX_DAYS_AHEAD = 60;
@@ -39,6 +41,8 @@ function formatDateLabel(value: string): string {
 export default function CheckoutScheduleScreen() {
   const router = useRouter();
   const { cart, saveCheckout } = useCart();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [periods, setPeriods] = useState<DeliveryPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -229,36 +233,38 @@ export default function CheckoutScheduleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    marginBottom: spacing.md,
-  },
-  section: {
-    fontWeight: "700",
-    marginBottom: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  selectedDate: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginTop: spacing.sm,
-  },
-  periodList: {
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  periodCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-  },
-  periodCardActive: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.primary,
-  },
-  periodLabel: {
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    title: {
+      marginBottom: spacing.md,
+    },
+    section: {
+      fontWeight: "700",
+      marginBottom: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    selectedDate: {
+      color: palette.primary,
+      fontWeight: "700",
+      marginTop: spacing.sm,
+    },
+    periodList: {
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+    },
+    periodCard: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      padding: spacing.md,
+    },
+    periodCardActive: {
+      backgroundColor: palette.secondary,
+      borderColor: palette.primary,
+    },
+    periodLabel: {
+      fontWeight: "700",
+    },
+  });
+}

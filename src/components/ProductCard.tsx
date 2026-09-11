@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { StockBadge } from "@/src/components/StockBadge";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import {
   hasPromoDiscount,
   isProductOnPromo,
@@ -24,6 +27,8 @@ export function ProductCard({
   onPress,
   width = "48%",
 }: ProductCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const image = product.images[0];
   const unavailable = product.stockStatus === "out_of_stock";
   const onPromo = isProductOnPromo(product);
@@ -96,73 +101,75 @@ export function ProductCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  pressed: {
-    opacity: 0.94,
-  },
-  unavailable: {
-    opacity: 0.55,
-  },
-  imageWrap: {
-    position: "relative",
-  },
-  image: {
-    backgroundColor: colors.secondary,
-    height: 156,
-    width: "100%",
-  },
-  imageFallback: {
-    backgroundColor: colors.softAccent,
-  },
-  promoBadge: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.sm,
-    left: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    position: "absolute",
-    top: spacing.sm,
-  },
-  promoBadgeLabel: {
-    color: colors.white,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  content: {
-    gap: 6,
-    padding: spacing.md,
-  },
-  category: {
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  name: {
-    fontWeight: "600",
-    letterSpacing: 0,
-    minHeight: 40,
-  },
-  price: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  priceRow: {
-    gap: 2,
-  },
-  priceOld: {
-    color: colors.muted,
-    letterSpacing: 0,
-    textDecorationLine: "line-through",
-  },
-  pricePromo: {
-    color: colors.accent,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      overflow: "hidden",
+    },
+    pressed: {
+      opacity: 0.94,
+    },
+    unavailable: {
+      opacity: 0.55,
+    },
+    imageWrap: {
+      position: "relative",
+    },
+    image: {
+      backgroundColor: palette.secondary,
+      height: 156,
+      width: "100%",
+    },
+    imageFallback: {
+      backgroundColor: palette.softAccent,
+    },
+    promoBadge: {
+      backgroundColor: palette.brandBlack,
+      borderRadius: radius.sm,
+      left: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      position: "absolute",
+      top: spacing.sm,
+    },
+    promoBadgeLabel: {
+      color: palette.primary,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    content: {
+      gap: 6,
+      padding: spacing.md,
+    },
+    category: {
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    name: {
+      fontWeight: "600",
+      letterSpacing: 0,
+      minHeight: 40,
+    },
+    price: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    priceRow: {
+      gap: 2,
+    },
+    priceOld: {
+      color: palette.muted,
+      letterSpacing: 0,
+      textDecorationLine: "line-through",
+    },
+    pricePromo: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+  });
+}

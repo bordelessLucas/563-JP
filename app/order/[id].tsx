@@ -6,7 +6,7 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
@@ -14,10 +14,12 @@ import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
 import { OrderTimeline } from "@/src/components/OrderTimeline";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { getOrderById } from "@/src/services/order.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { Order } from "@/src/types/order";
 import { formatCurrency } from "@/src/utils/format";
 import {
@@ -32,6 +34,8 @@ import {
 export default function OrderDetailScreen() {
   const router = useRouter();
   const { isAdmin } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -278,71 +282,73 @@ export default function OrderDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerBack: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 2,
-    minHeight: 44,
-    paddingRight: spacing.sm,
-  },
-  headerBackLabel: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    marginBottom: 0,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  cardTitle: {
-    fontWeight: "700",
-    marginBottom: spacing.xs,
-  },
-  value: {
-    fontWeight: "700",
-  },
-  trackingHit: {
-    gap: spacing.xs,
-    minHeight: 44,
-    paddingVertical: spacing.xs,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  itemRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-  },
-  itemCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  totalRow: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: spacing.sm,
-    paddingTop: spacing.md,
-  },
-  total: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  actions: {
-    gap: spacing.md,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    headerBack: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 2,
+      minHeight: 44,
+      paddingRight: spacing.sm,
+    },
+    headerBackLabel: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      marginBottom: 0,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.lg,
+    },
+    cardTitle: {
+      fontWeight: "700",
+      marginBottom: spacing.xs,
+    },
+    value: {
+      fontWeight: "700",
+    },
+    trackingHit: {
+      gap: spacing.xs,
+      minHeight: 44,
+      paddingVertical: spacing.xs,
+    },
+    link: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    itemRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+    },
+    itemCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    totalRow: {
+      borderTopColor: palette.border,
+      borderTopWidth: 1,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: spacing.sm,
+      paddingTop: spacing.md,
+    },
+    total: {
+      color: palette.primary,
+      fontWeight: "700",
+    },
+    actions: {
+      gap: spacing.md,
+    },
+  });
+}

@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { Button } from "@/src/components/Button";
 import { Container } from "@/src/components/Container";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { listAllOrders } from "@/src/services/order.service";
 import { Order } from "@/src/types/order";
 
@@ -84,6 +86,8 @@ function buildStats(orders: Order[]) {
 export function AdminDashboardScreen() {
   const router = useRouter();
   const { profile, logout } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,115 +255,117 @@ export function AdminDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: spacing.lg,
-  },
-  logoutButton: {
-    alignItems: "center",
-    backgroundColor: colors.secondary,
-    borderRadius: radius.xl,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  banner: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-    padding: spacing.lg,
-  },
-  bannerEyebrow: {
-    color: colors.softAccent,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  bannerTitle: {
-    color: colors.white,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontWeight: "700",
-    marginBottom: spacing.md,
-  },
-  errorBlock: {
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  statCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-    width: "48%",
-  },
-  statValue: {
-    color: colors.primary,
-  },
-  moduleList: {
-    gap: spacing.sm,
-    paddingBottom: spacing.xl,
-  },
-  moduleCard: {
-    alignItems: "flex-start",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  moduleIcon: {
-    alignItems: "center",
-    backgroundColor: colors.secondary,
-    borderRadius: radius.md,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  moduleCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  moduleTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-  },
-  moduleTitle: {
-    flex: 1,
-    fontWeight: "700",
-  },
-  badge: {
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  badgeLive: {
-    backgroundColor: colors.secondary,
-  },
-  badgeSoon: {
-    backgroundColor: colors.secondary,
-  },
-  badgeLabel: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-  badgeLabelLive: {
-    color: colors.success,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    header: {
+      alignItems: "flex-start",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: spacing.lg,
+    },
+    logoutButton: {
+      alignItems: "center",
+      backgroundColor: palette.secondary,
+      borderRadius: radius.xl,
+      height: 44,
+      justifyContent: "center",
+      width: 44,
+    },
+    banner: {
+      backgroundColor: palette.brandBlack,
+      borderRadius: radius.lg,
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+      padding: spacing.lg,
+    },
+    bannerEyebrow: {
+      color: palette.primary,
+      fontWeight: "700",
+      letterSpacing: 1,
+    },
+    bannerTitle: {
+      color: palette.white,
+    },
+    sectionTitle: {
+      color: palette.ink,
+      fontWeight: "700",
+      marginBottom: spacing.md,
+    },
+    errorBlock: {
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    statsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+    },
+    statCard: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      gap: spacing.xs,
+      padding: spacing.md,
+      width: "48%",
+    },
+    statValue: {
+      color: palette.primary,
+    },
+    moduleList: {
+      gap: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+    moduleCard: {
+      alignItems: "flex-start",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: spacing.md,
+      padding: spacing.md,
+    },
+    moduleIcon: {
+      alignItems: "center",
+      backgroundColor: palette.secondary,
+      borderRadius: radius.md,
+      height: 44,
+      justifyContent: "center",
+      width: 44,
+    },
+    moduleCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    moduleTitleRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "space-between",
+    },
+    moduleTitle: {
+      flex: 1,
+      fontWeight: "700",
+    },
+    badge: {
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    badgeLive: {
+      backgroundColor: palette.secondary,
+    },
+    badgeSoon: {
+      backgroundColor: palette.secondary,
+    },
+    badgeLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    badgeLabelLive: {
+      color: palette.success,
+    },
+  });
+}

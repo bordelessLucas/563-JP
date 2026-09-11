@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -9,8 +9,10 @@ import {
   View,
 } from "react-native";
 
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 type ImageGalleryProps = {
   images: string[];
@@ -20,6 +22,8 @@ type ImageGalleryProps = {
 const width = Dimensions.get("window").width;
 
 export function ImageGallery({ images, height = 340 }: ImageGalleryProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [index, setIndex] = useState(0);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -69,48 +73,50 @@ export function ImageGallery({ images, height = 340 }: ImageGalleryProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  image: {
-    backgroundColor: colors.secondary,
-  },
-  fallback: {
-    backgroundColor: colors.softAccent,
-    width: "100%",
-  },
-  footer: {
-    bottom: spacing.md,
-    left: 0,
-    position: "absolute",
-    right: 0,
-  },
-  counter: {
-    alignSelf: "flex-end",
-    backgroundColor: "rgba(28, 43, 38, 0.7)",
-    borderRadius: radius.sm,
-    marginBottom: spacing.sm,
-    marginRight: spacing.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  counterLabel: {
-    color: colors.white,
-    fontWeight: "700",
-  },
-  dots: {
-    flexDirection: "row",
-    gap: spacing.xs,
-    justifyContent: "center",
-  },
-  dot: {
-    backgroundColor: colors.white,
-    borderRadius: radius.sm,
-    height: 8,
-    opacity: 0.45,
-    width: 8,
-  },
-  dotActive: {
-    backgroundColor: colors.accent,
-    opacity: 1,
-    width: 18,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    image: {
+      backgroundColor: palette.secondary,
+    },
+    fallback: {
+      backgroundColor: palette.softAccent,
+      width: "100%",
+    },
+    footer: {
+      bottom: spacing.md,
+      left: 0,
+      position: "absolute",
+      right: 0,
+    },
+    counter: {
+      alignSelf: "flex-end",
+      backgroundColor: "rgba(28, 43, 38, 0.7)",
+      borderRadius: radius.sm,
+      marginBottom: spacing.sm,
+      marginRight: spacing.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    counterLabel: {
+      color: palette.white,
+      fontWeight: "700",
+    },
+    dots: {
+      flexDirection: "row",
+      gap: spacing.xs,
+      justifyContent: "center",
+    },
+    dot: {
+      backgroundColor: palette.white,
+      borderRadius: radius.sm,
+      height: 8,
+      opacity: 0.45,
+      width: 8,
+    },
+    dotActive: {
+      backgroundColor: palette.accent,
+      opacity: 1,
+      width: 18,
+    },
+  });
+}

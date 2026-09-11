@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -15,13 +15,17 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, fontFamily, radius, spacing, type } from "@/src/components/theme";
+import { fontFamily, radius, spacing, type } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 import { formatCurrency } from "@/src/utils/format";
 
 export function CartScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const {
     cart,
     loading,
@@ -172,7 +176,7 @@ export function CartScreen() {
                       }
                       style={styles.qtyButton}
                     >
-                      <Ionicons color={colors.primary} name="remove" size={16} />
+                      <Ionicons color={colors.ink} name="remove" size={16} />
                     </Pressable>
                     <Typography style={styles.qtyValue} variant="body">
                       {item.quantity}
@@ -185,7 +189,7 @@ export function CartScreen() {
                       }
                       style={styles.qtyButton}
                     >
-                      <Ionicons color={colors.primary} name="add" size={16} />
+                      <Ionicons color={colors.ink} name="add" size={16} />
                     </Pressable>
                     <Typography style={styles.lineTotal} variant="caption">
                       {formatCurrency(item.unitPrice * item.quantity)}
@@ -287,128 +291,130 @@ export function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  eyebrow: {
-    color: colors.primary,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  title: {
-    marginBottom: spacing.lg,
-  },
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    overflow: "hidden",
-    padding: spacing.md,
-  },
-  image: {
-    backgroundColor: colors.secondary,
-    borderRadius: radius.md,
-    height: 92,
-    width: 92,
-  },
-  imageFallback: {
-    backgroundColor: colors.softAccent,
-  },
-  cardBody: {
-    flex: 1,
-    gap: 6,
-  },
-  name: {
-    fontWeight: "700",
-  },
-  price: {
-    color: colors.muted,
-  },
-  qtyRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  qtyButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  qtyValue: {
-    fontWeight: "700",
-    minWidth: 20,
-    textAlign: "center",
-  },
-  lineTotal: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginLeft: "auto",
-  },
-  messageLabel: {
-    fontWeight: "700",
-    marginTop: spacing.xs,
-  },
-  messageInput: {
-    backgroundColor: colors.canvas,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    color: colors.ink,
-    fontFamily,
-    fontSize: type.caption,
-    minHeight: 64,
-    padding: spacing.sm,
-    textAlignVertical: "top",
-  },
-  remove: {
-    color: colors.error,
-    fontWeight: "700",
-  },
-  removeHit: {
-    alignSelf: "flex-start",
-    justifyContent: "center",
-    minHeight: 44,
-    paddingVertical: spacing.sm,
-  },
-  summary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  summaryRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  feeBlock: {
-    gap: spacing.xs,
-  },
-  feeHint: {
-    color: colors.muted,
-  },
-  totalLabel: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-  totalValue: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    eyebrow: {
+      color: palette.ink,
+      fontWeight: "700",
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+    },
+    title: {
+      marginBottom: spacing.lg,
+    },
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: spacing.md,
+      overflow: "hidden",
+      padding: spacing.md,
+    },
+    image: {
+      backgroundColor: palette.secondary,
+      borderRadius: radius.md,
+      height: 92,
+      width: 92,
+    },
+    imageFallback: {
+      backgroundColor: palette.softAccent,
+    },
+    cardBody: {
+      flex: 1,
+      gap: 6,
+    },
+    name: {
+      fontWeight: "700",
+    },
+    price: {
+      color: palette.muted,
+    },
+    qtyRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    qtyButton: {
+      alignItems: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      height: 44,
+      justifyContent: "center",
+      width: 44,
+    },
+    qtyValue: {
+      fontWeight: "700",
+      minWidth: 20,
+      textAlign: "center",
+    },
+    lineTotal: {
+      color: palette.ink,
+      fontWeight: "700",
+      marginLeft: "auto",
+    },
+    messageLabel: {
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    messageInput: {
+      backgroundColor: palette.canvas,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      color: palette.ink,
+      fontFamily,
+      fontSize: type.caption,
+      minHeight: 64,
+      padding: spacing.sm,
+      textAlignVertical: "top",
+    },
+    remove: {
+      color: palette.error,
+      fontWeight: "700",
+    },
+    removeHit: {
+      alignSelf: "flex-start",
+      justifyContent: "center",
+      minHeight: 44,
+      paddingVertical: spacing.sm,
+    },
+    summary: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.md,
+      padding: spacing.lg,
+    },
+    summaryRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    feeBlock: {
+      gap: spacing.xs,
+    },
+    feeHint: {
+      color: palette.muted,
+    },
+    totalLabel: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    totalValue: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+  });
+}

@@ -10,14 +10,16 @@ import { Container } from "@/src/components/Container";
 import { EmptyState } from "@/src/components/EmptyState";
 import { InlineNotice } from "@/src/components/InlineNotice";
 import { LoadingState } from "@/src/components/LoadingState";
-import { colors, radius, spacing } from "@/src/components/theme";
+import { radius, spacing } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   createCheckout,
   simulateMockPayment,
 } from "@/src/services/backend.service";
+import type { ThemeColors } from "@/src/theme/types";
 import { PaymentMethod } from "@/src/types/order";
 import {
   checkoutRecoveryHref,
@@ -35,6 +37,8 @@ export default function CheckoutPaymentScreen() {
   const params = useLocalSearchParams<{ method?: string }>();
   const { user, profile } = useAuth();
   const { cart, refreshCart } = useCart();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const initialMethod: PaymentMethod =
     params.method === "card" ? "card" : "pix";
@@ -395,90 +399,92 @@ export default function CheckoutPaymentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    marginBottom: 0,
-  },
-  totalCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.lg,
-  },
-  totalValue: {
-    color: colors.primary,
-  },
-  awaitingCard: {
-    gap: spacing.md,
-  },
-  section: {
-    color: colors.ink,
-    fontWeight: "700",
-  },
-  methodRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  methodChip: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  methodChipOn: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.primary,
-  },
-  pressed: {
-    opacity: 0.9,
-  },
-  methodLabel: {
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  methodLabelOn: {
-    color: colors.primary,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  cardTitle: {
-    fontWeight: "700",
-  },
-  qrPlaceholder: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: colors.secondary,
-    borderRadius: radius.md,
-    gap: spacing.xs,
-    height: 160,
-    justifyContent: "center",
-    width: 160,
-  },
-  qrMark: {
-    color: colors.primary,
-  },
-  pixCode: {
-    color: colors.muted,
-  },
-  actions: {
-    gap: spacing.md,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      marginBottom: 0,
+    },
+    totalCard: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.xs,
+      padding: spacing.lg,
+    },
+    totalValue: {
+      color: palette.primary,
+    },
+    awaitingCard: {
+      gap: spacing.md,
+    },
+    section: {
+      color: palette.ink,
+      fontWeight: "700",
+    },
+    methodRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    methodChip: {
+      alignItems: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flex: 1,
+      justifyContent: "center",
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    methodChipOn: {
+      backgroundColor: palette.secondary,
+      borderColor: palette.primary,
+    },
+    pressed: {
+      opacity: 0.9,
+    },
+    methodLabel: {
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    methodLabelOn: {
+      color: palette.primary,
+    },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.md,
+      padding: spacing.lg,
+    },
+    cardTitle: {
+      fontWeight: "700",
+    },
+    qrPlaceholder: {
+      alignItems: "center",
+      alignSelf: "center",
+      backgroundColor: palette.secondary,
+      borderRadius: radius.md,
+      gap: spacing.xs,
+      height: 160,
+      justifyContent: "center",
+      width: 160,
+    },
+    qrMark: {
+      color: palette.primary,
+    },
+    pixCode: {
+      color: palette.muted,
+    },
+    actions: {
+      gap: spacing.md,
+    },
+  });
+}

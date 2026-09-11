@@ -1,11 +1,12 @@
 import { Stack, useRouter } from "expo-router";
 import { Pressable } from "react-native";
 
-import { colors } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
+import { useTheme } from "@/src/contexts/ThemeContext";
 
 export default function AdminLayout() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   return (
     <Stack

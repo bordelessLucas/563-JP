@@ -1,9 +1,9 @@
 import { Href, Redirect, Stack, useRouter, useSegments } from "expo-router";
 import { Pressable } from "react-native";
 
-import { colors } from "@/src/components/theme";
 import { Typography } from "@/src/components/Typography";
 import { useCart } from "@/src/contexts/CartContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import {
   checkoutRecoveryHref,
   hasAddress,
@@ -15,6 +15,7 @@ export default function CheckoutLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { cart, loading } = useCart();
+  const { colors } = useTheme();
   const route = String(segments[segments.length - 1] ?? "");
   const allowEmptyCart = route === "payment" || route === "success";
 
@@ -52,7 +53,7 @@ export default function CheckoutLayout() {
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.canvas },
-        headerTintColor: colors.primary,
+        headerTintColor: colors.ink,
         headerTitleStyle: { color: colors.ink, fontWeight: "700" },
         headerLeft: () => (
           <Pressable
@@ -62,7 +63,7 @@ export default function CheckoutLayout() {
             style={{ paddingHorizontal: 8 }}
           >
             <Typography
-              style={{ color: colors.primary, fontWeight: "700" }}
+              style={{ color: colors.ink, fontWeight: "700" }}
               variant="caption"
             >
               Voltar

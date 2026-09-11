@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "563-JP",
+    "name": "Chuva de Ouro",
     "slug": "563-joao-paulo-",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "jp563",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/logo-chuva-de-ouro.png",
+    "scheme": "chuvadeouro",
+    "userInterfaceStyle": "automatic",
     "owner": "borderlesspc12",
     "ios": {
       "supportsTablet": true,
@@ -15,15 +15,15 @@
     "android": {
       "package": "com.borderless.jp563",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/logo-chuva-de-ouro.png",
+        "backgroundColor": "#000000"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo-chuva-de-ouro.png"
     },
     "plugins": [
       "expo-router",
@@ -31,9 +31,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo-chuva-de-ouro.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#000000"
         }
       ],
       "expo-status-bar",

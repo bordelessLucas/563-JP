@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -10,13 +10,14 @@ import {
 } from "react-native";
 
 import {
-  colors,
   fontFamily,
   fontFamilyBold,
   radius,
   spacing,
   type,
 } from "@/src/components/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import type { ThemeColors } from "@/src/theme/types";
 
 type InputProps = TextInputProps & {
   label: string;
@@ -32,6 +33,8 @@ export function Input({
   isPassword = false,
   ...props
 }: InputProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isPasswordVisible, setPasswordVisible] = useState(false);
 
   return (
@@ -70,47 +73,49 @@ export function Input({
   );
 }
 
-const styles = StyleSheet.create({
-  field: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.ink,
-    fontFamily: fontFamilyBold,
-    fontSize: type.caption,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-  inputWrapper: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.sm,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  input: {
-    color: colors.ink,
-    flex: 1,
-    fontFamily,
-    fontSize: type.body,
-    minHeight: 50,
-  },
-  eyeHit: {
-    alignItems: "center",
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  error: {
-    color: colors.error,
-    fontFamily,
-    fontSize: type.caption,
-  },
-});
+function createStyles(palette: ThemeColors) {
+  return StyleSheet.create({
+    field: {
+      gap: spacing.xs,
+    },
+    label: {
+      color: palette.ink,
+      fontFamily: fontFamilyBold,
+      fontSize: type.caption,
+      fontWeight: "700",
+      letterSpacing: 0.4,
+    },
+    inputWrapper: {
+      alignItems: "center",
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: spacing.sm,
+      minHeight: 52,
+      paddingHorizontal: spacing.md,
+    },
+    inputError: {
+      borderColor: palette.error,
+    },
+    input: {
+      color: palette.ink,
+      flex: 1,
+      fontFamily,
+      fontSize: type.body,
+      minHeight: 50,
+    },
+    eyeHit: {
+      alignItems: "center",
+      height: 44,
+      justifyContent: "center",
+      width: 44,
+    },
+    error: {
+      color: palette.error,
+      fontFamily,
+      fontSize: type.caption,
+    },
+  });
+}
